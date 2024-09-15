@@ -58,7 +58,7 @@ const OLIN_STUDENTS: [Student; 8] = [
 
 fn get_average_gpa_iter<'a>(students: impl Iterator<Item = &'a Student>, len: u32) -> f32 {
     let gpa_sum: f32 = students 
-        .map(|student: &Student| student.gpa as f32)
+        .map(|student: &Student| student.gpa)
         .sum();
     gpa_sum / (len as f32)
 }
@@ -95,7 +95,7 @@ fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
 }
 
 fn get_best_class() -> ClassYear {
-    [
+    *([
         ClassYear::Sophomore,
         ClassYear::Junior,
         ClassYear::Senior,
@@ -104,8 +104,7 @@ fn get_best_class() -> ClassYear {
         .max_by_key(|class_year: &&ClassYear| {
             get_num_excel_students_for_class(**class_year)
         })
-        .unwrap()
-        .clone()
+        .unwrap())
 }
 
 // Do not modify below here

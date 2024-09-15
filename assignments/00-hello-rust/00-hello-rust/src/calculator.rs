@@ -53,7 +53,7 @@ fn parse_num(num: &str) -> Option<u32> {
        Some(_) => {
             let radix_parse = match base.unwrap() {
                 Base::Binary | Base::Hexadecimal => u32::from_str_radix(&num[2..], base.unwrap() as u32),
-                Base::Decimal => u32::from_str_radix(&num, base.unwrap() as u32)
+                Base::Decimal => u32::from_str_radix(num, base.unwrap() as u32)
             };
             match radix_parse {
                 Ok(n) => Some(n),
@@ -89,9 +89,9 @@ fn evaluate_input(op: &str, num1: &str, num2: &str) -> String {
             let result = evaluate(op, num1, num2);
             format!("The result of {num1} {op} {num2} is {result}")
         },
-        (_, None, _) => format!("Invalid first number"),
-        (_, _, None) => format!("Invalid second number"),
-        (None, _, _) => format!("Invalid operation"),
+        (_, None, _) => "Invalid first number".to_string(),
+        (_, _, None) => "Invalid second number".to_string(),
+        (None, _, _) => "Invalid operation".to_string(),
     }
 }
 
