@@ -28,7 +28,7 @@ fn get_input() -> i32 {
 
 /// Runs the guessing game.
 /// Reads and outputs from stdin/stdout.
-/// See module description for more information on the game rules. 
+/// See module description for more information on the game rules.
 fn main() {
     println!("Guess the number!");
 

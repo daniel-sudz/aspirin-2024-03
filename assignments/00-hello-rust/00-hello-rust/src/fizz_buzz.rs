@@ -1,4 +1,3 @@
-
 // Prints the classic fizzbuzz sequence to stdout.
 //
 // @input max_num: u32 - the maximum number to print fizzbuzz up to
