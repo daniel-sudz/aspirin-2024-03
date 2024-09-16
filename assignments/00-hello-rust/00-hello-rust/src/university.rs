@@ -57,18 +57,14 @@ const OLIN_STUDENTS: [Student; 8] = [
 ];
 
 fn get_average_gpa_iter<'a>(students: impl Iterator<Item = &'a Student>, len: u32) -> f32 {
-    let gpa_sum: f32 = students 
-        .map(|student: &Student| student.gpa)
-        .sum();
+    let gpa_sum: f32 = students.map(|student: &Student| student.gpa).sum();
     gpa_sum / (len as f32)
 }
 
 fn get_average_gpa() -> f32 {
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
-        .filter(|student| {
-            student.class_year != ClassYear::FirstYear
-        })
+        .filter(|student| student.class_year != ClassYear::FirstYear)
         .collect();
     get_average_gpa_iter(student_list.iter().copied(), student_list.len() as u32)
 }
@@ -76,34 +72,23 @@ fn get_average_gpa() -> f32 {
 fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
-        .filter(|student| {
-            student.class_year == class_year
-        })
+        .filter(|student| student.class_year == class_year)
         .collect();
     let average_gpa: f32 = get_average_gpa();
 
-   student_list 
-        .iter()
-        .fold(0, |count, student| {
-            if student.gpa > average_gpa {
-                count+1
-            }
-            else {
-                count
-            }
-        })
+    student_list.iter().fold(0, |count, student| {
+        if student.gpa > average_gpa {
+            count + 1
+        } else {
+            count
+        }
+    })
 }
 
 fn get_best_class() -> ClassYear {
-    *([
-        ClassYear::Sophomore,
-        ClassYear::Junior,
-        ClassYear::Senior,
-    ]
+    *([ClassYear::Sophomore, ClassYear::Junior, ClassYear::Senior]
         .iter()
-        .max_by_key(|class_year: &&ClassYear| {
-            get_num_excel_students_for_class(**class_year)
-        })
+        .max_by_key(|class_year: &&ClassYear| get_num_excel_students_for_class(**class_year))
         .unwrap())
 }
 

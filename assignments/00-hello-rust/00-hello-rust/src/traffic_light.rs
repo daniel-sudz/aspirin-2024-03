@@ -15,7 +15,7 @@ fn get_next_color(state: TrafficLightState) -> TrafficLightColor {
     match state.current_color {
         TrafficLightColor::Red => TrafficLightColor::Green,
         TrafficLightColor::Yellow => TrafficLightColor::Red,
-        TrafficLightColor::Green => TrafficLightColor::Yellow
+        TrafficLightColor::Green => TrafficLightColor::Yellow,
     }
 }
 
@@ -25,15 +25,16 @@ fn get_next_state(
     pedestrian_walk_request: bool,
 ) -> TrafficLightColor {
     match (
-        current_time_ms - state.last_transition_time_ms, 
-        state.current_color, 
-        pedestrian_walk_request) {
+        current_time_ms - state.last_transition_time_ms,
+        state.current_color,
+        pedestrian_walk_request,
+    ) {
         (25000..=u32::MAX, TrafficLightColor::Red, _) => get_next_color(state),
         (5000..=u32::MAX, TrafficLightColor::Yellow, _) => get_next_color(state),
         (30000..=u32::MAX, TrafficLightColor::Green, false) => get_next_color(state),
         (20000..=u32::MAX, TrafficLightColor::Green, true) => get_next_color(state),
-        (_, _, _) => state.current_color
-   }
+        (_, _, _) => state.current_color,
+    }
 }
 
 // Do not modify below here
