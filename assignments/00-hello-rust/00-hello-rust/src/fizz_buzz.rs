@@ -7,7 +7,7 @@
 // Prints "FizzBuzz" for numbers divisible by both.
 // Prints the number itself if it is not divisible by 3 or 5.
 pub fn print_fizz_buzz(max_num: u32) {
-    for i in 0..max_num {
+    for i in 1..max_num + 1 {
         match (i % 3 == 0, i % 5 == 0) {
             (false, false) => println!("{i}"),
             (true, false) => println!("Fizz"),
