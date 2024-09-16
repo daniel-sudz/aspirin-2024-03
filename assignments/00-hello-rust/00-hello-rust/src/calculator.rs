@@ -1,3 +1,8 @@
+//! Implement a simple calculator that can perform bitwise operations on two numbers.
+//! Support AND, OR, and XOR operations.
+//! Supports inputs in decimal, binary, and hexadecimal.
+
+// Supported operations
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Operation {
     And,
@@ -5,6 +10,7 @@ enum Operation {
     Xor,
 }
 
+// pretty print the operation
 impl std::fmt::Display for Operation {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -15,6 +21,7 @@ impl std::fmt::Display for Operation {
     }
 }
 
+// Supported bases for the numbers
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Base {
     Binary = 2,
@@ -22,6 +29,11 @@ enum Base {
     Hexadecimal = 16,
 }
 
+// @input num: &str - the number to parse
+// @return Option<Base> - the base of the number
+// If the numbers starts with "0b", return Base::Binary
+// If the numbers starts with "0x", return Base::Hexadecimal
+// Otherwise, return Base::Decimal if the number is all digits
 fn parse_base(num: &str) -> Option<Base> {
     match num.len() {
         0 => None,
@@ -40,6 +52,9 @@ fn parse_base(num: &str) -> Option<Base> {
     }
 }
 
+// @input num: &str - the number to parse
+// @return Option<u32> - the parsed number
+// Uses parse_base to determine the base of the number
 fn parse_num(num: &str) -> Option<u32> {
     let base: Option<Base> = parse_base(num);
     match base {
@@ -59,6 +74,12 @@ fn parse_num(num: &str) -> Option<u32> {
     }
 }
 
+// @input op: &str - the operation to parse
+// @return Option<Operation> - the parsed operation
+// Supports the following operations:
+// "AND" or "&" -> Operation::And
+// "OR" or "|" -> Operation::Or
+// "XOR" or "^" -> Operation::Xor
 fn parse_operation(op: &str) -> Option<Operation> {
     match op.to_ascii_uppercase().as_str() {
         "AND" | "&" => Some(Operation::And),
@@ -68,6 +89,11 @@ fn parse_operation(op: &str) -> Option<Operation> {
     }
 }
 
+// @input op: Operation - the operation to perform
+// @input num1: u32 - the first number
+// @input num2: u32 - the second number
+// @return u32 - the result of the operation
+// Perform the requested operation on the two numbers
 fn evaluate(op: Operation, num1: u32, num2: u32) -> u32 {
     match op {
         Operation::And => num1 & num2,
@@ -76,6 +102,12 @@ fn evaluate(op: Operation, num1: u32, num2: u32) -> u32 {
     }
 }
 
+// @input op: &str - the operation to perform
+// @input num1: &str - the first number
+// @input num2: &str - the second number
+// @return String - a message with the result of the operation
+// Parse the input and return a message with the result of the operation
+// Returns an error message if the input is invalid
 fn evaluate_input(op: &str, num1: &str, num2: &str) -> String {
     let op: Option<Operation> = parse_operation(op);
     let num1: Option<u32> = parse_num(num1);

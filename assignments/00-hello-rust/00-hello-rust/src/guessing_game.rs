@@ -1,9 +1,17 @@
 #![warn(missing_docs)]
 
+//! A simple guessing game.
+//! A computer will generate a random number between 1 and 100.
+//! At each guess, the computer will report if the number is too high or too low.
+//! The player will guess the number until they get it right.
+
 use rand::Rng;
 use std::cmp::Ordering;
 use std::io;
 
+/// Get the user's input from stdin.
+/// @returns i32: the user's guess
+/// @error panics if the input is not a valid number
 fn get_input() -> i32 {
     println!("Please input your guess");
 
@@ -18,6 +26,9 @@ fn get_input() -> i32 {
     }
 }
 
+/// Runs the guessing game.
+/// Reads and outputs from stdin/stdout.
+/// See module description for more information on the game rules. 
 fn main() {
     println!("Guess the number!");
 

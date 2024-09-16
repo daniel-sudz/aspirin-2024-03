@@ -1,3 +1,8 @@
+//! Simulates a traffic light with pedestrian crossing.
+//! The traffic light has three colors: red, yellow, and green.
+//! The red lights lasts 25000 ms, the yellow light lasts 5000 ms, and the green light lasts 30000 ms.
+//! If There is a pedestrian crossing, the green light will last 20000 ms.
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum TrafficLightColor {
     Red,
@@ -11,6 +16,9 @@ struct TrafficLightState {
     last_transition_time_ms: u32,
 }
 
+// Transitions to the next color of the traffic light
+// @input state: The current state of the traffic light
+// @output TrafficLightColor: The next color of the traffic light
 fn get_next_color(state: TrafficLightState) -> TrafficLightColor {
     match state.current_color {
         TrafficLightColor::Red => TrafficLightColor::Green,
@@ -19,6 +27,11 @@ fn get_next_color(state: TrafficLightState) -> TrafficLightColor {
     }
 }
 
+// Transitions to the next state of the traffic light based on the rules in the module documentation
+// @input state: The current state of the traffic light
+// @input current_time_ms: The current time in milliseconds
+// @input pedestrian_walk_request: A boolean indicating if a pedestrian is crossing
+// @return TrafficLightColor: The next color of the traffic light
 fn get_next_state(
     state: TrafficLightState,
     current_time_ms: u32,

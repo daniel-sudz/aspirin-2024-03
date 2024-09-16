@@ -1,3 +1,6 @@
+//! Implements a few functions to analyze student data at Olin College of Engineering
+//! The data is stored in the OLIN_STUDENTS array
+
 #[derive(PartialEq, Clone, Copy, Debug)]
 enum ClassYear {
     Senior,
@@ -56,11 +59,14 @@ const OLIN_STUDENTS: [Student; 8] = [
     },
 ];
 
+// @input students: An iterator of students
+// @return f32: The average GPA of the students
 fn get_average_gpa_iter<'a>(students: impl Iterator<Item = &'a Student>, len: u32) -> f32 {
     let gpa_sum: f32 = students.map(|student: &Student| student.gpa).sum();
     gpa_sum / (len as f32)
 }
 
+// @return f32: The average GPA of all students except first years
 fn get_average_gpa() -> f32 {
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
@@ -69,6 +75,8 @@ fn get_average_gpa() -> f32 {
     get_average_gpa_iter(student_list.iter().copied(), student_list.len() as u32)
 }
 
+// @input class_year: The class year to analyze
+// @return u32: The number of students in the class with a GPA above the school average
 fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
@@ -85,6 +93,8 @@ fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
     })
 }
 
+// @input ClassYear: The class year to analyze
+// @return ClassYear: The class year with the most students with a GPA above the school average
 fn get_best_class() -> ClassYear {
     *([ClassYear::Sophomore, ClassYear::Junior, ClassYear::Senior]
         .iter()
