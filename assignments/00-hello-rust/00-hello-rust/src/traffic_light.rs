@@ -44,6 +44,7 @@ fn get_next_state(
     ) {
         (25000..=u32::MAX, TrafficLightColor::Red, _) => get_next_color(state),
         (5000..=u32::MAX, TrafficLightColor::Yellow, _) => get_next_color(state),
+        // match the timing based on if the pedestrian is crossing
         (30000..=u32::MAX, TrafficLightColor::Green, false) => get_next_color(state),
         (20000..=u32::MAX, TrafficLightColor::Green, true) => get_next_color(state),
         (_, _, _) => state.current_color,

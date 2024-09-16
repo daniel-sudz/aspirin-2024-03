@@ -37,7 +37,10 @@ fn main() {
     loop {
         let guess = get_input();
         print!("You guessed: {}. ", guess);
-
+        
+        // Compare the guess to the secret number
+        // Outptut if the guess is too high or too low to stdout
+        // Let the user continue guessing until they get it right
         match secret_number.cmp(&guess) {
             Ordering::Equal => {
                 println!("That is correct!");

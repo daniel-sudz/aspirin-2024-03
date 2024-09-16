@@ -123,6 +123,31 @@ fn evaluate_input(op: &str, num1: &str, num2: &str) -> String {
     }
 }
 
+// Runs an interactive calculator that reads input from stdin
+// Outputs the result of the operation to stdout
+pub fn main() {
+    println!("Please enter the first number:");
+    let mut num1 = String::new();
+    std::io::stdin()
+        .read_line(&mut num1)
+        .expect("Failed to read line");
+
+    println!("Please enter the second number:");
+    let mut num2 = String::new();
+    std::io::stdin()
+        .read_line(&mut num2)
+        .expect("Failed to read line");
+
+    println!("Please enter the operation:");
+    let mut op = String::new();
+    std::io::stdin()
+        .read_line(&mut op)
+        .expect("Failed to read line");
+
+    let result = evaluate_input(op.trim(), num1.trim(), num2.trim());
+    println!("{}", result);
+}
+
 #[cfg(test)]
 mod tests {
     use test_case::test_case;

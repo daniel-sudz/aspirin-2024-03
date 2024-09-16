@@ -41,7 +41,7 @@ const OLIN_STUDENTS: [Student; 8] = [
         class_year: ClassYear::Senior,
         gpa: 0.0,
     },
-    // new students
+    // add the new students
     Student {
         name: "Anna",
         class_year: ClassYear::FirstYear,
@@ -68,22 +68,26 @@ fn get_average_gpa_iter<'a>(students: impl Iterator<Item = &'a Student>, len: u3
 
 // @return f32: The average GPA of all students except first years
 fn get_average_gpa() -> f32 {
+    // filter out first years
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
         .filter(|student| student.class_year != ClassYear::FirstYear)
         .collect();
+    // get the average GPA of the remaining students
     get_average_gpa_iter(student_list.iter().copied(), student_list.len() as u32)
 }
 
 // @input class_year: The class year to analyze
 // @return u32: The number of students in the class with a GPA above the school average
 fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
+    // filter the students by class year
     let student_list: Vec<&Student> = OLIN_STUDENTS
         .iter()
         .filter(|student| student.class_year == class_year)
         .collect();
     let average_gpa: f32 = get_average_gpa();
 
+    // count the number of students with a GPA above the school average
     student_list.iter().fold(0, |count, student| {
         if student.gpa > average_gpa {
             count + 1
@@ -96,6 +100,7 @@ fn get_num_excel_students_for_class(class_year: ClassYear) -> u32 {
 // @input ClassYear: The class year to analyze
 // @return ClassYear: The class year with the most students with a GPA above the school average
 fn get_best_class() -> ClassYear {
+    // reduce the class years to the one with the most students with a GPA above the school average
     *([ClassYear::Sophomore, ClassYear::Junior, ClassYear::Senior]
         .iter()
         .max_by_key(|class_year: &&ClassYear| get_num_excel_students_for_class(**class_year))
