@@ -4,6 +4,8 @@ fn increments(x: &mut i32) {
 }
 
 /// Given two mutable i32 references, swap their values
+/// we could use the std::mem::swap but presumably we are not allowed to use it
+#[allow(clippy::all)]
 fn swap(x: &mut i32, y: &mut i32) {
     let temp = *x;
     *x = *y;

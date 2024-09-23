@@ -1,6 +1,9 @@
 // Now try and implement a doubly linked version. Give an explanation
 // for why this doesn't work.
 
+// Commented out since it doesn't compile as noted above
+
+/*  
 struct Node {
     val: i32,
     next: Link,
@@ -71,3 +74,5 @@ impl LinkedStack {
         }
     }
 }
+
+*/
