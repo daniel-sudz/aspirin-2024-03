@@ -7,7 +7,7 @@ struct Node {
 type Link = Option<Box<Node>>;
 
 pub struct LinkedStack {
-    head: Link 
+    head: Link,
 }
 
 impl LinkedStack {
