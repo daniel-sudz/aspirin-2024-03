@@ -1,7 +1,6 @@
-
 struct Node {
     val: i32,
-    prev: Link
+    prev: Link,
 }
 
 type Link = Option<Box<Node>>;
@@ -11,27 +10,19 @@ pub struct LinkedStack {
 }
 
 impl LinkedStack {
-
     fn new() -> Self {
-        LinkedStack {
-            head: None
-        }
+        LinkedStack { head: None }
     }
 
     fn push(&mut self, val: i32) {
         match &self.head {
             None => {
-                self.head = {
-                    Some(Box::new(Node {
-                        val,
-                        prev: None
-                    }))
-                };
+                self.head = { Some(Box::new(Node { val, prev: None })) };
             }
             Some(_) => {
                 let next_head = Some(Box::new(Node {
                     val,
-                    prev: self.head.take()
+                    prev: self.head.take(),
                 }));
                 self.head = next_head;
             }
@@ -99,5 +90,5 @@ mod tests {
         }
 
         assert_eq!(stack.pop(), None);
-   }
+    }
 }

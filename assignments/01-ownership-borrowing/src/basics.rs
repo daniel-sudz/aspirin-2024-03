@@ -8,7 +8,7 @@ fn takes_ownership_and_prints(s: String) {
 fn first_letter(s: &str) -> Option<&str> {
     match s.chars().next() {
         Some(c) => Some(&s[..c.len_utf8()]),
-        None => None
+        None => None,
     }
 }
 
@@ -26,13 +26,13 @@ fn slice_sum(arr: &[i32]) -> i32 {
 
 /// Given a string slice, look for a substring, and return a slice of the first
 /// occurrence of the substring (return None if the substring is not found)
-/// 
+///
 /// Lifetime of the returned slice is the same as the input string
 fn find_in_string<'a>(s: &'a str, sub: &str) -> Option<&'a str> {
     let match_byte = s.find(sub);
     match match_byte {
-        Some(x) => Some(&s[x..x+sub.len()]),
-        None => None
+        Some(x) => Some(&s[x..x + sub.len()]),
+        None => None,
     }
 }
 
