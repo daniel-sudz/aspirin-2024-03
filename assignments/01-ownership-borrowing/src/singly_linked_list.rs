@@ -17,7 +17,7 @@ impl LinkedStack {
     fn push(&mut self, val: i32) {
         match &self.head {
             None => {
-                self.head = { Some(Box::new(Node { val, prev: None })) };
+                self.head = Some(Box::new(Node { val, prev: None }));
             }
             Some(_) => {
                 let next_head = Some(Box::new(Node {
