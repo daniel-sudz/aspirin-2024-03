@@ -33,7 +33,22 @@ fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) ->
 }
 
 fn is_valid_paranthesis(paranthesis: &str) -> bool {
-    todo!()
+    paranthesis.chars().into_iter().fold((0,0,0), |c| {
+        let next = match c {
+            '(' => (c.0+1, c.1, c.2),
+            ')' => (c.0-1, c.1, c.2),
+            '{' => (c.0, c.1+1, c.2),
+            '}' => (c.0, c.1-1, c.2),
+            '[' => (c.0, c.1, c.2+1),
+            ']' => (c.0, c.1, c.2-1),
+            _ => c
+        };
+        match (next.0 >= 0, next.1 >= 0, next.2 >= 0) {
+            (true,true,true) => next,
+            (_,_,_) => return false
+        }
+    });
+    true;
 }
 
 fn longest_common_substring<(first_str: &str, second_str: &str) -> &str {
