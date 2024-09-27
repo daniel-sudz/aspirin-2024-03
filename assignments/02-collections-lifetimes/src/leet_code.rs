@@ -1,12 +1,13 @@
 use std::collections::HashMap;
+use std::cmp::max;
 
 fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
-    if(sequence.len() == 0) {
+    if sequence.len() == 0 {
         return 0;
     }
-    let ans: i32 = 0;
-    let cur_ans: i32 = 1;
-    let last = &sequence[0];
+    let mut ans: i32 = 0;
+    let mut cur_ans: i32 = 1;
+    let mut last = &sequence[0];
     for i in 1..sequence.len() {
         if sequence[i] == *last {
             cur_ans += 1;
@@ -33,30 +34,58 @@ fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) ->
 }
 
 fn is_valid_paranthesis(paranthesis: &str) -> bool {
-    paranthesis.chars().into_iter().fold((0,0,0), |c| {
+    paranthesis.chars().into_iter().fold((0,0,0,false), |s, c| {
         let next = match c {
-            '(' => (c.0+1, c.1, c.2),
-            ')' => (c.0-1, c.1, c.2),
-            '{' => (c.0, c.1+1, c.2),
-            '}' => (c.0, c.1-1, c.2),
-            '[' => (c.0, c.1, c.2+1),
-            ']' => (c.0, c.1, c.2-1),
-            _ => c
+            '(' => (s.0+1, s.1, s.2),
+            ')' => (s.0-1, s.1, s.2),
+            '{' => (s.0, s.1+1, s.2),
+            '}' => (s.0, s.1-1, s.2),
+            '[' => (s.0, s.1, s.2+1),
+            ']' => (s.0, s.1, s.2-1),
+            _ => (-1,-1,-1)
         };
         match (next.0 >= 0, next.1 >= 0, next.2 >= 0) {
-            (true,true,true) => next,
-            (_,_,_) => return false
+            (true,true,true) => (next.0, next.1, next.2, false),
+            (_,_,_) => (-1,-1,-1,true)
         }
-    });
-    true;
+    }).3
 }
 
-fn longest_common_substring<(first_str: &str, second_str: &str) -> &str {
-    todo!()
+fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str {
+    let mut ans: &str = &first_str[0..0];
+    let mut best = 0;
+    for start in 0..first_str.len() {
+        let mut end = start;
+        while end < first_str.len() && end < second_str.len() && first_str[end..end+1] == second_str[end..end+1] {
+            end += 1;
+        }
+        if end - start > best {
+            best = end - start;
+            ans = &first_str[start..end];
+        }
+    }
+    ans
 }
 
-fn longest_common_substring_multiple(strings: &[&str]) -> &str {
-    todo!()
+fn longest_common_substring_multiple<'a>(strings: &[&'a str]) -> &'a str {
+    let mut ans: &str = &strings[0][0..0];
+    let mut best: usize = 0;
+    for start in 0..strings[0].len() {
+        let mut end = start;
+        'advance: loop {
+            for i in 1..strings.len() {
+                if end >= strings[i].len() || strings[i][end..end+1] != strings[0][end..end+1] {
+                    break 'advance;
+                }
+            }
+            end += 1;
+        }
+        if end - start > best {
+            best = end - start;
+            ans = &strings[0][start..end];
+        }
+    }
+    ans
 }
 
 #[cfg(test)]
