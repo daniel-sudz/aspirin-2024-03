@@ -1,19 +1,84 @@
-fn split_string(string: &str, delimeter: &str) -> Vec<&str> {
-    todo!()
+use std::iter::once;
+use std::collections::HashSet;
+use std::mem::swap;
+
+fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
+    let result: Vec<&str> = string.split(delimeter).collect();
+    result
 }
 
 #[derive(PartialEq, Debug)]
-struct Differences {
-    only_in_first: Vec<&str>,
-    only_in_second: Vec<&str>,
+struct  Differences<'a> {
+    only_in_first: Vec<&'a str>,
+    only_in_second: Vec<&'a str>,
 }
 
-fn find_differences(first_string: &str, second_string: &str) -> Differences {
-    todo!()
+fn find_differences<'a>(first_string: &'a str, second_string: &'a str) -> Differences<'a> {
+    let split_first = split_string(first_string, " ");
+    let split_second = split_string(second_string, " ");
+
+    let mut first_set: HashSet<&str> = HashSet::new();
+    let mut second_set: HashSet<&str> = HashSet::new();
+
+    for word in &split_first {
+        first_set.insert(word);
+    }
+
+    for word in &split_second {
+        second_set.insert(word);
+    }
+
+    let mut only_in_first: Vec<&'a str> = Vec::new();
+    let mut only_in_second: Vec<&'a str> = Vec::new(); 
+
+    for word in &split_first {
+        if !second_set.contains(word) {
+            only_in_first.push(word);
+        }
+    }
+
+    for word in &split_second {
+        if !first_set.contains(word) {
+            only_in_second.push(word);
+        }
+    }
+
+    Differences {
+        only_in_first,
+        only_in_second,
+    }
+}
+
+
+fn is_vowel(c: char) -> bool {
+    match c {
+        'a' | 'e' | 'i' | 'o' | 'u' => true,
+        _ => false,
+    }
 }
 
 fn merge_names(first_name: &str, second_name: &str) -> String {
-    todo!()
+    let mut merged_name = String::new();
+
+    let mut iter_first = first_name.chars().peekable();
+    let mut iter_second = second_name.chars().peekable();
+
+    while iter_first.peek().is_some() || iter_second.peek().is_some() {
+        let first_char = iter_first.next();
+        if first_char.is_some() && is_vowel(first_char.unwrap()) {
+            merged_name.push(first_char.unwrap());
+        }
+        
+        let mut head_char = iter_first.next();
+        while head_char.is_some() && !is_vowel(head_char.unwrap()) {
+            merged_name.push(head_char.unwrap());
+            head_char = iter_first.next();
+        }
+
+        swap(&mut iter_first, &mut iter_second);
+    }
+
+    merged_name
 }
 
 #[cfg(test)]
