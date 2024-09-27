@@ -1,11 +1,35 @@
 use std::collections::HashMap;
 
-fn longest_equal_sequence_prescriptive(sequence) -> i32 {
-    todo!()
+fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
+    if(sequence.len() == 0) {
+        return 0;
+    }
+    let ans: i32 = 0;
+    let cur_ans: i32 = 1;
+    let last = &sequence[0];
+    for i in 1..sequence.len() {
+        if sequence[i] == *last {
+            cur_ans += 1;
+        }
+        else {
+            ans = max(ans, cur_ans);
+            cur_ans = 1;
+            last = &sequence[i];
+        }
+    }
+    max(ans, cur_ans)
 }
 
-fn longest_equal_sequence_functional(sequence) -> i32 {
-    todo!()
+fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
+    match sequence.len() {
+        0 => 0,
+        _ => sequence.into_iter().fold((0,0,&sequence[0]), |(ans, cur_ans, last), x| {
+            match last == x {
+                true => (max(ans,cur_ans+1), cur_ans+1, last),
+                false => (max(ans,cur_ans), 1, x)
+            }
+        }).0
+    }
 }
 
 fn is_valid_paranthesis(paranthesis: &str) -> bool {
