@@ -52,38 +52,46 @@ fn is_valid_paranthesis(paranthesis: &str) -> bool {
 }
 
 fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str {
-    let mut ans: &str = &first_str[0..0];
-    let mut best = 0;
-    for start in 0..first_str.len() {
-        let mut end = start;
-        while end < first_str.len() && end < second_str.len() && first_str[end..end+1] == second_str[end..end+1] {
-            end += 1;
+    let len_first = first_str.chars().count();
+    let len_second = second_str.chars().count();
+
+    let first_chars: Vec<char> = first_str.chars().collect();
+    let second_chars: Vec<char> = second_str.chars().collect();
+
+    let mut dp: Vec<Vec<i32>> = vec![vec![0; len_second]; len_first];
+
+    for i in 0..len_first {
+        for j in 0..len_second {
+            if first_chars[i] == second_chars[j] {
+                if i == 0 || j == 0 {
+                    dp[i][j] = 1;
+                }
+                else {
+                    dp[i][j] = dp[i-1][j-1] + 1;
+                }
+            }
         }
-        if end - start > best {
-            best = end - start;
-            ans = &first_str[start..end];
+    }
+
+    let mut len_match = 0;
+    let mut ans: &str = &"";
+    for i in 0..len_first {
+        for j in 0..len_second {
+            if dp[i][j] > len_match {
+                len_match = dp[i][j];
+                let start = first_str.char_indices().nth((i+1) - len_match as usize).unwrap().0;
+                let end = first_str.char_indices().nth(i).unwrap().0;
+                ans = &first_str[start..end+1];
+            }
         }
     }
     ans
 }
 
 fn longest_common_substring_multiple<'a>(strings: &[&'a str]) -> &'a str {
-    let mut ans: &str = &strings[0][0..0];
-    let mut best: usize = 0;
-    for start in 0..strings[0].len() {
-        let mut end = start;
-        'advance: loop {
-            for i in 1..strings.len() {
-                if end >= strings[i].len() || strings[i][end..end+1] != strings[0][end..end+1] {
-                    break 'advance;
-                }
-            }
-            end += 1;
-        }
-        if end - start > best {
-            best = end - start;
-            ans = &strings[0][start..end];
-        }
+    let mut ans: &str = &strings[0];
+    for i in 1..strings.len() {
+        ans = longest_common_substring(ans, &strings[i]);
     }
     ans
 }
