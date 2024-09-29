@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::cmp::max;
 
 fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {

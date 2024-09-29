@@ -50,7 +50,7 @@ fn find_differences<'a>(first_string: &'a str, second_string: &'a str) -> Differ
 }
 
 
-fn is_vowel(c: char) -> bool {
+fn is_vowel(c: &char) -> bool {
     match c {
         'a' | 'e' | 'i' | 'o' | 'u' => true,
         _ => false,
@@ -64,17 +64,13 @@ fn merge_names(first_name: &str, second_name: &str) -> String {
     let mut iter_second = second_name.chars().peekable();
 
     while iter_first.peek().is_some() || iter_second.peek().is_some() {
-        let first_char = iter_first.next();
-        if first_char.is_some() && is_vowel(first_char.unwrap()) {
-            merged_name.push(first_char.unwrap());
+        if iter_first.peek().is_some() && is_vowel(&iter_first.peek().unwrap()) {
+            merged_name.push(iter_first.next().unwrap());
         }
         
-        let mut head_char = iter_first.next();
-        while head_char.is_some() && !is_vowel(head_char.unwrap()) {
-            merged_name.push(head_char.unwrap());
-            head_char = iter_first.next();
+        while iter_first.peek().is_some() && !is_vowel(iter_first.peek().unwrap()) {
+            merged_name.push(iter_first.next().unwrap());
         }
-
         swap(&mut iter_first, &mut iter_second);
     }
 
