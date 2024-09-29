@@ -2,13 +2,13 @@ use std::iter::once;
 use std::collections::HashSet;
 use std::mem::swap;
 
-// use the build-in with the exception of handling the empty delim case
+// use the built-in split with the exception of handling the empty end split case
 fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
-    match delimeter.is_empty() {
-        true => return vec![],
-        false => string.split(delimeter).collect::<Vec<&str>>(),
-
-    }
+   let mut result = string.split(delimeter).collect::<Vec<&str>>();
+   while !result.is_empty() && result[result.len()-1] == "" {
+        result.pop();
+   }
+   result
 }
 
 #[derive(PartialEq, Debug)]
