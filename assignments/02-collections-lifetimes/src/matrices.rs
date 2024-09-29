@@ -25,9 +25,9 @@ fn dot_product_prescriptive(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, Mat
 // use standard dot product sum multiply definition
 fn dot_product_functional(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, MatrixError> {
     match (vec1.len(), vec2.len()) {
-        (0,_) | (_,0) => Err(MatrixError::EmptyVector),
-        (a,b) if a != b => Err(MatrixError::DimensionMismatch),
-        _ => Ok(vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum())
+        (0, _) | (_, 0) => Err(MatrixError::EmptyVector),
+        (a, b) if a != b => Err(MatrixError::DimensionMismatch),
+        _ => Ok(vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum()),
     }
 }
 
@@ -49,7 +49,7 @@ fn multiply_matrices(
     if vec1[0].len() != vec2.len() {
         return Err(MatrixError::DimensionMismatch);
     }
-    // apply standard matrix multiplication 
+    // apply standard matrix multiplication
     let mut res = vec![vec![0.0; vec2[0].len()]; vec1.len()];
     for c2 in 0..vec2[0].len() {
         for r1 in 0..vec1.len() {
@@ -57,7 +57,7 @@ fn multiply_matrices(
                 res[r1][c2] += vec1[r1][c1] * vec2[c1][c2];
             }
         }
-    } 
+    }
     Ok(res)
 }
 

@@ -2,15 +2,15 @@ use std::mem::swap;
 
 // use the built-in split with the exception of handling the empty end split case
 fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
-   let mut result = string.split(delimeter).collect::<Vec<&str>>();
-   while !result.is_empty() && result[result.len()-1] == "" {
+    let mut result = string.split(delimeter).collect::<Vec<&str>>();
+    while !result.is_empty() && result[result.len() - 1] == "" {
         result.pop();
-   }
-   result
+    }
+    result
 }
 
 #[derive(PartialEq, Debug)]
-struct  Differences<'a> {
+struct Differences<'a> {
     only_in_first: Vec<&'a str>,
     only_in_second: Vec<&'a str>,
 }
@@ -21,7 +21,7 @@ fn find_differences<'a>(first_string: &'a str, second_string: &'a str) -> Differ
     let split_second = split_string(second_string, " ");
 
     let mut only_in_first: Vec<&'a str> = Vec::new();
-    let mut only_in_second: Vec<&'a str> = Vec::new(); 
+    let mut only_in_second: Vec<&'a str> = Vec::new();
 
     for word in &split_first {
         if !second_string.contains(word) {
@@ -50,7 +50,7 @@ fn is_vowel(c: &char) -> bool {
 }
 
 // consumes current word until vowel and then swaps the to the other name to continue
-// until both names are exhausted 
+// until both names are exhausted
 fn merge_names(first_name: &str, second_name: &str) -> String {
     let mut merged_name = String::new();
 
@@ -63,12 +63,12 @@ fn merge_names(first_name: &str, second_name: &str) -> String {
             merged_name.push(iter_first.next().unwrap());
         }
 
-        // consume until next vowel 
+        // consume until next vowel
         while iter_first.peek().is_some() && !is_vowel(iter_first.peek().unwrap()) {
             merged_name.push(iter_first.next().unwrap());
         }
 
-        // swap to other name 
+        // swap to other name
         swap(&mut iter_first, &mut iter_second);
     }
 

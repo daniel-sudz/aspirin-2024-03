@@ -12,8 +12,7 @@ fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) 
     for i in 1..sequence.len() {
         if sequence[i] == *last {
             cur_ans += 1;
-        }
-        else {
+        } else {
             ans = max(ans, cur_ans);
             cur_ans = 1;
             last = &sequence[i];
@@ -27,33 +26,42 @@ fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) 
 fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
     match sequence.len() {
         0 => 0,
-        _ => sequence.into_iter().fold((0,0,&sequence[0]), |(ans, cur_ans, last), x| {
-            match last == x {
-                true => (max(ans,cur_ans+1), cur_ans+1, last),
-                false => (max(ans,cur_ans), 1, x)
-            }
-        }).0
+        _ => {
+            sequence
+                .into_iter()
+                .fold((0, 0, &sequence[0]), |(ans, cur_ans, last), x| {
+                    match last == x {
+                        true => (max(ans, cur_ans + 1), cur_ans + 1, last),
+                        false => (max(ans, cur_ans), 1, x),
+                    }
+                })
+                .0
+        }
     }
 }
 
 // use standard stack-based counting
 // answer becomes invalid is counters go negative for any stack
 fn is_valid_paranthesis(paranthesis: &str) -> bool {
-    paranthesis.chars().into_iter().fold((0,0,0,true), |s, c| {
-        let next = match c {
-            '(' => (s.0+1, s.1, s.2),
-            ')' => (s.0-1, s.1, s.2),
-            '{' => (s.0, s.1+1, s.2),
-            '}' => (s.0, s.1-1, s.2),
-            '[' => (s.0, s.1, s.2+1),
-            ']' => (s.0, s.1, s.2-1),
-            _ => (-1,-1,-1)
-        };
-        match (next.0 >= 0, next.1 >= 0, next.2 >= 0, s.3) {
-            (true,true,true,true) => (next.0, next.1, next.2, true),
-            (_,_,_,_) => (-1,-1,-1,true)
-        }
-    }).eq(&(0,0,0,true))
+    paranthesis
+        .chars()
+        .into_iter()
+        .fold((0, 0, 0, true), |s, c| {
+            let next = match c {
+                '(' => (s.0 + 1, s.1, s.2),
+                ')' => (s.0 - 1, s.1, s.2),
+                '{' => (s.0, s.1 + 1, s.2),
+                '}' => (s.0, s.1 - 1, s.2),
+                '[' => (s.0, s.1, s.2 + 1),
+                ']' => (s.0, s.1, s.2 - 1),
+                _ => (-1, -1, -1),
+            };
+            match (next.0 >= 0, next.1 >= 0, next.2 >= 0, s.3) {
+                (true, true, true, true) => (next.0, next.1, next.2, true),
+                (_, _, _, _) => (-1, -1, -1, true),
+            }
+        })
+        .eq(&(0, 0, 0, true))
 }
 
 // use the standard 2D DP approach
@@ -64,7 +72,7 @@ fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str
 
     let first_chars: Vec<char> = first_str.chars().collect();
     let second_chars: Vec<char> = second_str.chars().collect();
-    
+
     // where dp[i][j] is the longest common substring ending at i for first_str and j for second_str
     let mut dp: Vec<Vec<i32>> = vec![vec![0; len_second]; len_first];
 
@@ -73,9 +81,8 @@ fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str
             if first_chars[i] == second_chars[j] {
                 if i == 0 || j == 0 {
                     dp[i][j] = 1;
-                }
-                else {
-                    dp[i][j] = dp[i-1][j-1] + 1;
+                } else {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
                 }
             }
         }
@@ -87,9 +94,13 @@ fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str
         for j in 0..len_second {
             if dp[i][j] > len_match {
                 len_match = dp[i][j];
-                let start = first_str.char_indices().nth((i+1) - len_match as usize).unwrap().0;
+                let start = first_str
+                    .char_indices()
+                    .nth((i + 1) - len_match as usize)
+                    .unwrap()
+                    .0;
                 let end = first_str.char_indices().nth(i).unwrap().0;
-                ans = &first_str[start..end+1];
+                ans = &first_str[start..end + 1];
             }
         }
     }
