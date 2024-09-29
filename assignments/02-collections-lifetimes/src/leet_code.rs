@@ -1,5 +1,7 @@
 use std::cmp::max;
 
+// counts until diff char is encountered then resets
+// returns max of all counters
 fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
     if sequence.len() == 0 {
         return 0;
@@ -20,6 +22,8 @@ fn longest_equal_sequence_prescriptive<T: std::cmp::PartialOrd>(sequence: &[T]) 
     max(ans, cur_ans)
 }
 
+// counts until diff char is encountered then resets
+// return max of all counters
 fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) -> i32 {
     match sequence.len() {
         0 => 0,
@@ -32,6 +36,8 @@ fn longest_equal_sequence_functional<T: std::cmp::PartialOrd>(sequence: &[T]) ->
     }
 }
 
+// use standard stack-based counting
+// answer becomes invalid is counters go negative for any stack
 fn is_valid_paranthesis(paranthesis: &str) -> bool {
     paranthesis.chars().into_iter().fold((0,0,0,true), |s, c| {
         let next = match c {
@@ -50,13 +56,16 @@ fn is_valid_paranthesis(paranthesis: &str) -> bool {
     }).eq(&(0,0,0,true))
 }
 
+// use the standard 2D DP approach
+// https://en.wikipedia.org/wiki/Longest_common_substring#Dynamic_programming
 fn longest_common_substring<'a>(first_str: &'a str, second_str: &str) -> &'a str {
     let len_first = first_str.chars().count();
     let len_second = second_str.chars().count();
 
     let first_chars: Vec<char> = first_str.chars().collect();
     let second_chars: Vec<char> = second_str.chars().collect();
-
+    
+    // where dp[i][j] is the longest common substring ending at i for first_str and j for second_str
     let mut dp: Vec<Vec<i32>> = vec![vec![0; len_second]; len_first];
 
     for i in 0..len_first {
