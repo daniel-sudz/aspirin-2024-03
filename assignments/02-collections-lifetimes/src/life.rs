@@ -2,9 +2,13 @@ use std::iter::once;
 use std::collections::HashSet;
 use std::mem::swap;
 
+// use the build-in with the exception of handling the empty delim case
 fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
-    let result: Vec<&str> = string.split(delimeter).collect();
-    result
+    match delimeter.is_empty() {
+        true => return vec![],
+        false => string.split(delimeter).collect::<Vec<&str>>(),
+
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -13,32 +17,22 @@ struct  Differences<'a> {
     only_in_second: Vec<&'a str>,
 }
 
+// re-use the split_string function and use the built in contains to match on every possible word
 fn find_differences<'a>(first_string: &'a str, second_string: &'a str) -> Differences<'a> {
     let split_first = split_string(first_string, " ");
     let split_second = split_string(second_string, " ");
-
-    let mut first_set: HashSet<&str> = HashSet::new();
-    let mut second_set: HashSet<&str> = HashSet::new();
-
-    for word in &split_first {
-        first_set.insert(word);
-    }
-
-    for word in &split_second {
-        second_set.insert(word);
-    }
 
     let mut only_in_first: Vec<&'a str> = Vec::new();
     let mut only_in_second: Vec<&'a str> = Vec::new(); 
 
     for word in &split_first {
-        if !second_set.contains(word) {
+        if !second_string.contains(word) {
             only_in_first.push(word);
         }
     }
 
     for word in &split_second {
-        if !first_set.contains(word) {
+        if !first_string.contains(word) {
             only_in_second.push(word);
         }
     }
@@ -49,7 +43,7 @@ fn find_differences<'a>(first_string: &'a str, second_string: &'a str) -> Differ
     }
 }
 
-
+// helper function to check if char is a vowel
 fn is_vowel(c: &char) -> bool {
     match c {
         'a' | 'e' | 'i' | 'o' | 'u' => true,
@@ -57,6 +51,8 @@ fn is_vowel(c: &char) -> bool {
     }
 }
 
+// consumes current word until vowel and then swaps the to the other name to continue
+// until both names are exhausted 
 fn merge_names(first_name: &str, second_name: &str) -> String {
     let mut merged_name = String::new();
 
@@ -64,13 +60,17 @@ fn merge_names(first_name: &str, second_name: &str) -> String {
     let mut iter_second = second_name.chars().peekable();
 
     while iter_first.peek().is_some() || iter_second.peek().is_some() {
+        // check of vowel is the first char and consume is so
         if iter_first.peek().is_some() && is_vowel(&iter_first.peek().unwrap()) {
             merged_name.push(iter_first.next().unwrap());
         }
-        
+
+        // consume until next vowel 
         while iter_first.peek().is_some() && !is_vowel(iter_first.peek().unwrap()) {
             merged_name.push(iter_first.next().unwrap());
         }
+
+        // swap to other name 
         swap(&mut iter_first, &mut iter_second);
     }
 
