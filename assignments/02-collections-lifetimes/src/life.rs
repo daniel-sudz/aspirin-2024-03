@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use std::mem::swap;
 
 // use the built-in split with the exception of handling the empty end split case
 fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
     let mut result = string.split(delimeter).collect::<Vec<&str>>();
-    while !result.is_empty() && result[result.len() - 1] == "" {
+    while !result.is_empty() && result[result.len() - 1].is_empty() {
         result.pop();
     }
     result
@@ -43,10 +45,7 @@ fn find_differences<'a, 'b>(first_string: &'a str, second_string: &'b str) -> Di
 
 // helper function to check if char is a vowel
 fn is_vowel(c: &char) -> bool {
-    match c {
-        'a' | 'e' | 'i' | 'o' | 'u' => true,
-        _ => false,
-    }
+    matches!(c, 'a' | 'e' | 'i' | 'o' | 'u')
 }
 
 // consumes current word until vowel and then swaps the to the other name to continue
@@ -59,7 +58,7 @@ fn merge_names(first_name: &str, second_name: &str) -> String {
 
     while iter_first.peek().is_some() || iter_second.peek().is_some() {
         // check of vowel is the first char and consume is so
-        if iter_first.peek().is_some() && is_vowel(&iter_first.peek().unwrap()) {
+        if iter_first.peek().is_some() && is_vowel(iter_first.peek().unwrap()) {
             merged_name.push(iter_first.next().unwrap());
         }
 

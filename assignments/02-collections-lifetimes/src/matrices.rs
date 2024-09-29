@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::vec;
 
 #[derive(Debug, PartialEq)]
@@ -8,6 +10,7 @@ pub enum MatrixError {
 }
 
 // use standard dot product sum multiply definition
+#[allow(clippy::ptr_arg)]
 fn dot_product_prescriptive(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, MatrixError> {
     if vec1.is_empty() || vec2.is_empty() {
         return Err(MatrixError::EmptyVector);
@@ -23,6 +26,7 @@ fn dot_product_prescriptive(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, Mat
 }
 
 // use standard dot product sum multiply definition
+#[allow(clippy::ptr_arg)]
 fn dot_product_functional(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, MatrixError> {
     match (vec1.len(), vec2.len()) {
         (0, _) | (_, 0) => Err(MatrixError::EmptyVector),
@@ -32,15 +36,17 @@ fn dot_product_functional(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, Matri
 }
 
 // use standard matrix multiplication definition
+#[allow(clippy::needless_range_loop)]
+#[allow(clippy::ptr_arg)]
 fn multiply_matrices(
     vec1: &Vec<Vec<f64>>,
     vec2: &Vec<Vec<f64>>,
 ) -> Result<Vec<Vec<f64>>, MatrixError> {
     // check dimension match cases
-    if !vec1.into_iter().all(|x| x.len() == vec1[0].len()) {
+    if !vec1.iter().all(|x| x.len() == vec1[0].len()) {
         return Err(MatrixError::InvalidShape);
     }
-    if !vec2.into_iter().all(|x| x.len() == vec2[0].len()) {
+    if !vec2.iter().all(|x| x.len() == vec2[0].len()) {
         return Err(MatrixError::InvalidShape);
     }
     if vec1.is_empty() || vec2.is_empty() {
