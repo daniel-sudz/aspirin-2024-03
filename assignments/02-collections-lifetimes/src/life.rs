@@ -10,13 +10,13 @@ fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
 }
 
 #[derive(PartialEq, Debug)]
-struct Differences<'a,'b> {
+struct Differences<'a, 'b> {
     only_in_first: Vec<&'a str>,
     only_in_second: Vec<&'b str>,
 }
 
 // re-use the split_string function and use the built in contains to match on every possible word
-fn find_differences<'a,'b>(first_string: &'a str, second_string: &'b str) -> Differences<'a,'b> {
+fn find_differences<'a, 'b>(first_string: &'a str, second_string: &'b str) -> Differences<'a, 'b> {
     let split_first = split_string(first_string, " ");
     let split_second = split_string(second_string, " ");
 
