@@ -59,7 +59,20 @@ impl Writer for StdoutWriter {
     }
 }
 
+// writes to a vector of strings
 pub struct MemoryWriter {
     output: Vec<String>,
+    error: Vec<String>
+}
+
+impl Writer for MemoryWriter {
+    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>>>) {
+       for line in stream {
+           match line {
+               Ok(l) => self.output.push(l),
+               Err(e) => self.error.push(e.to_string()),
+           }
+       } 
+    }
 }
 
