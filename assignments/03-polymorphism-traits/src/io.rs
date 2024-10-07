@@ -29,7 +29,7 @@ impl Reader for BuffReader {
 
 // provides a reader from a vector of strings
 pub struct MemoryReader {
-    input: Vec<String>,
+    pub input: Vec<String>,
 }
 
 impl Reader for MemoryReader {
@@ -41,15 +41,15 @@ impl Reader for MemoryReader {
 }
 
 // a writer than outputs to the standard output/error
-pub trait Writer {
-    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>>>);
+pub trait Writer<'a> {
+    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>> + 'a>);
 }
 
 // writes to to the stdout, putting errors into stderr
 pub struct StdoutWriter; 
 
-impl Writer for StdoutWriter {
-    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>>>) {
+impl<'a> Writer<'a> for StdoutWriter {
+    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>> + 'a>) {
        for line in stream {
            match line {
                Ok(l) => println!("{}", l),
@@ -60,13 +60,13 @@ impl Writer for StdoutWriter {
 }
 
 // writes to a vector of strings
-pub struct MemoryWriter {
-    output: Vec<String>,
-    error: Vec<String>
+pub struct MemoryWriter<'a> {
+    pub output: &'a mut Vec<String>,
+    pub error: &'a mut Vec<String>,
 }
 
-impl Writer for MemoryWriter {
-    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>>>) {
+impl<'a> Writer<'a> for MemoryWriter<'a> {
+    fn write(&mut self, stream: Box<dyn Iterator<Item = Result<String>> + 'a>) {
        for line in stream {
            match line {
                Ok(l) => self.output.push(l),

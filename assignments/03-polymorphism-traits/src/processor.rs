@@ -3,9 +3,9 @@ use crate::transformers::{self, Transformer};
 use crate::io;
 
 // a factory for creating a processor using abstract base traits
-fn processor_factory(
-    reader: Box<dyn io::Reader>, 
-    writer: Box<dyn io::Writer>,
+fn processor_factory<'a>(
+    reader: &mut Box<dyn io::Reader + 'a>, 
+    writer: &mut Box<dyn io::Writer + 'a>,
     transformers: Vec<Box<dyn Transformer>>,
     args: Args 
 ) {
@@ -18,13 +18,15 @@ fn processor_factory(
 }
 
 
-fn memory_processor_factory(args: Args) {
-    let reader = Box::new(io::BuffReader);
-    let writer = Box::new(io::StdoutWriter);
-
+fn memory_processor_factory<'a>(args: Args, input: Vec<String>, output: &'a mut Vec<String>, error: &'a mut Vec<String>) {
+    let mut reader: Box<dyn io::Reader> = Box::new(io::MemoryReader {input});
+    let mut writer: Box<dyn io::Writer<'a> + 'a> = Box::new(io::MemoryWriter {
+        output,
+        error,
+    });
     let transformers: Vec<Box<dyn transformers::Transformer>> = vec![
         Box::new(transformers::CaseInsensitivePreprocessor),
         Box::new(transformers::RegexPreprocessor),
     ];
-    processor_factory(reader, writer, transformers, args);
+    processor_factory(&mut reader, &mut writer, transformers, args);
 }
