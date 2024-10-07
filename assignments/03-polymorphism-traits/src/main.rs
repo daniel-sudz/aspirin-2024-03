@@ -1,29 +1,16 @@
 use anyhow::Result;
 use clap::Parser;
-use colored::Color;
-use std::path::PathBuf;
 
-#[derive(Parser, Debug)]
-struct Args {
-    #[clap(short, long)]
-    ignore_case: bool,
+mod transformers;
+mod args;
+mod io;
+mod processor;
 
-    #[clap(short = 'v', long)]
-    invert_match: bool,
-
-    #[clap(short, long)]
-    regex: bool,
-
-    #[clap(short, long)]
-    color: Option<Color>,
-
-    needle: String,
-
-    file: Option<PathBuf>,
-}
+use args::Args;
 
 fn main() -> Result<()> {
     let args = Args::parse();
     println!("{:?}", args);
+
     Ok(())
 }
