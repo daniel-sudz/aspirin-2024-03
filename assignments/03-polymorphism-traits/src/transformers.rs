@@ -10,7 +10,7 @@ pub trait Transformer {
 }
 
 // regex match processor
-
+#[derive(Default)]
 pub struct RegexPreprocessor;
 
 impl Transformer for RegexPreprocessor {
@@ -30,6 +30,7 @@ impl Transformer for RegexPreprocessor {
     }
 }
 
+#[derive(Default)]
 pub struct NeedlePreprocessor; 
 
 impl Transformer for NeedlePreprocessor {
@@ -56,6 +57,7 @@ impl Transformer for NeedlePreprocessor {
     }
 }
 
+#[derive(Default)]
 pub struct ColorPreprocessor;
 
 impl Transformer for ColorPreprocessor {
@@ -75,4 +77,40 @@ impl Transformer for ColorPreprocessor {
             }
         }
    }
+}
+
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_needle_processor() {
+        let input: Vec<Result<String, anyhow::Error>> = vec![
+            Ok("Hello, World!".to_string()),
+            Ok("no match".to_string()),
+            Ok("Hello, World!".to_string()),
+            Ok("no match".to_string()),
+            Ok("Hello, World!".to_string()),
+            Ok("no match".to_string()),
+        ];
+
+        let args = Args {
+            ignore_case: false,
+            invert_match: false,
+            regex: false,
+            color: None,
+            needle: "Hello".to_string(),
+            file: None,
+        };
+
+        let needle_processor = NeedlePreprocessor;
+        let res = needle_processor.transform(Box::new(input.into_iter()), &args);
+        let res_vec: Vec<String> = res.map(|x| {
+            match x {
+                Ok(x) => x,
+                Err(x) => x.to_string()
+            }
+        }).collect();
+
+        assert_eq!(res_vec, vec!["Hello, World!", "Hello, World!", "Hello, World!"]);
+    }
 }
