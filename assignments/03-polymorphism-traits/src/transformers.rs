@@ -8,20 +8,6 @@ pub trait Transformer {
     fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>>; 
 }
 
-// case sensitive preprocessor 
-pub struct CaseInsensitivePreprocessor;
-
-impl Transformer for CaseInsensitivePreprocessor {
-    fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
-        let ignore_case = args.ignore_case;
-        match ignore_case {
-            false => input,
-            true => Box::new(input.map(|s| Ok(s?.to_lowercase())))
-        }
-    }
-}
-
-
 // regex match processor
 
 pub struct RegexPreprocessor;

@@ -25,7 +25,6 @@ pub fn memory_processor_factory<'a>(args: Args, input: Vec<String>, output: &'a 
         error,
     });
     let transformers: Vec<Box<dyn transformers::Transformer>> = vec![
-        Box::new(transformers::CaseInsensitivePreprocessor),
         Box::new(transformers::RegexPreprocessor),
         Box::new(transformers::NeedlePreprocessor)
     ];
