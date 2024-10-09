@@ -91,3 +91,28 @@ fn memory_color_processor_test() {
     assert_eq!(output, vec!["\u{1b}[32mHello, World!\u{1b}[0m"]);
     assert_eq!(error, vec![] as Vec<String>);
 }
+
+
+#[test]
+fn memory_regex_processor_test() {
+    let mut output: Vec<String> = vec![];
+    let mut error: Vec<String> = vec![];
+    // from https://docs.rs/regex/latest/regex/#example-find-a-middle-initial
+    let input = vec![
+        "Homer J. Simpson".to_string(),
+        "Homer B. Simpson".to_string(),
+        "Foo J. Simpson".to_string(), 
+        "Bar B. Simpson".to_string(),
+    ];
+    let args = Args {
+        ignore_case: false,
+        invert_match: false, 
+        regex: true,
+        color: None,
+        needle: r"Homer (.)\. Simpson".to_string(),
+        file: None,
+    };
+    memory_processor_factory(args, input, &mut output, &mut error);
+    assert_eq!(output, vec!["Homer J. Simpson", "Homer B. Simpson"]);
+    assert_eq!(error, vec![] as Vec<String>);
+}
