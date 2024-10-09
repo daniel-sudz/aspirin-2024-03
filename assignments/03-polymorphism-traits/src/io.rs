@@ -17,7 +17,7 @@ impl Reader for BuffReader {
         match file {
             // handle reading from file
             Some(f) => {
-                let file = std::fs::File::open(f).unwrap();
+                let file = std::fs::File::open(f).expect("invalid supplied file path");
                 let reader = std::io::BufReader::new(file);
                 let lines = reader.lines().map(|l| l.map_err(|e| e.into()));
                 Box::new(lines)
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_file_reader() {
-        let mut tf = NamedTempFile::new().unwrap();
+        let mut tf = NamedTempFile::new().expect("invalid file path");
         let _ = tf.write("one\ntwo\nthree".as_bytes());
         let _ = tf.flush();
 

@@ -25,7 +25,7 @@ impl Transformer for RegexPreprocessor {
         match args.regex {
             false => input,
             true => {
-                let re = Regex::new(args.needle.as_str()).unwrap();
+                let re = Regex::new(args.needle.as_str()).expect("invalid supplied regex");
                 Box::new(input.filter(move |s| match s {
                     Ok(s) => re.is_match(s),
                     Err(_) => false,

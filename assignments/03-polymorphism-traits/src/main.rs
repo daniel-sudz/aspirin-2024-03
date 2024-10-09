@@ -55,12 +55,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_must_use)]
-    #[allow(unused_variables)]
     fn test_file_mode() {
         let mut tf = NamedTempFile::new().unwrap();
-        tf.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
-        tf.flush();
+        let _ = tf.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
+        let _ = tf.flush();
 
         let exe_path = absolute(
             Path::new(file!())
