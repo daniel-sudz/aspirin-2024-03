@@ -145,4 +145,32 @@ mod test {
         assert_eq!(res_vec, vec!["Homer J. Simpson", "Homer B. Simpson"]);
     }
 
+    #[test]
+    fn test_color_processor() {
+        let input: Vec<Result<String, anyhow::Error>> = vec![
+            Ok("Hello, World!".to_string()),
+        ];
+
+        let args = Args {
+            ignore_case: true,
+            invert_match: false, 
+            regex: false,
+            color: Some(colored::Color::Green),
+            needle: "HeLlO".to_string(),
+            file: None,
+        };
+
+        let color_processor = ColorPreprocessor;
+        let res = color_processor.transform(Box::new(input.into_iter()), &args);
+        let res_vec: Vec<String> = res.map(|x| {
+            match x {
+                Ok(x) => x,
+                Err(x) => x.to_string()
+            }
+        }).collect();
+
+        assert_eq!(res_vec, vec!["\u{1b}[32mHello, World!\u{1b}[0m"]);
+    }
+
+
 }
