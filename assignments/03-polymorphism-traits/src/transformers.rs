@@ -113,4 +113,36 @@ mod test {
 
         assert_eq!(res_vec, vec!["Hello, World!", "Hello, World!", "Hello, World!"]);
     }
+
+
+    #[test]
+    fn test_regex_processor() {
+        let input: Vec<Result<String, anyhow::Error>> = vec![
+            Ok("Homer J. Simpson".to_string()),
+            Ok("Homer B. Simpson".to_string()),
+            Ok("Foo J. Simpson".to_string()), 
+            Ok("Bar B. Simpson".to_string()),
+        ];
+
+        let args = Args {
+            ignore_case: false,
+            invert_match: false,
+            regex: true,
+            color: None,
+            needle: r"Homer (.)\. Simpson".to_string(),
+            file: None,
+        };
+
+        let needle_processor = RegexPreprocessor;
+        let res = needle_processor.transform(Box::new(input.into_iter()), &args);
+        let res_vec: Vec<String> = res.map(|x| {
+            match x {
+                Ok(x) => x,
+                Err(x) => x.to_string()
+            }
+        }).collect();
+
+        assert_eq!(res_vec, vec!["Homer J. Simpson", "Homer B. Simpson"]);
+    }
+
 }
