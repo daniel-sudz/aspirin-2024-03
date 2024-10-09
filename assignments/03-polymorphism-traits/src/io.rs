@@ -84,11 +84,8 @@ impl<'a> Writer<'a> for MemoryWriter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::{absolute, Path};
-    use std::{
-        io::Write,
-        process::{Command, Stdio},
-    };
+    
+    use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
