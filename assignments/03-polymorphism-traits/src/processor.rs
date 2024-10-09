@@ -26,7 +26,8 @@ pub fn memory_processor_factory<'a>(args: Args, input: Vec<String>, output: &'a 
     });
     let transformers: Vec<Box<dyn transformers::Transformer>> = vec![
         Box::new(transformers::RegexPreprocessor),
-        Box::new(transformers::NeedlePreprocessor)
+        Box::new(transformers::NeedlePreprocessor),
+        Box::new(transformers::ColorPreprocessor)
     ];
     processor_factory(&mut reader, &mut writer, transformers, args);
 }

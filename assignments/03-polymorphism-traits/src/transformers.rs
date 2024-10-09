@@ -1,6 +1,7 @@
 
 use crate::args::Args;
 use anyhow::Result;
+use colored::Colorize;
 use regex::Regex;
 
 // A trait for a preprocessor that performs some transform on the input string
@@ -53,4 +54,25 @@ impl Transformer for NeedlePreprocessor {
             }
         }
     }
+}
+
+pub struct ColorPreprocessor;
+
+impl Transformer for ColorPreprocessor {
+    fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
+        let color = args.color.clone();
+        match color {
+            None => input,
+            Some(color) => {
+                Box::new(input.map(move |s| {
+                    match s {
+                        Ok(s) => {
+                            Ok(format!("{}", s.color(color)))
+                        },
+                        Err(e) => Err(e),
+                    }
+                }))
+            }
+        }
+   }
 }
