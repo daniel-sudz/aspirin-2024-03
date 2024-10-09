@@ -2,6 +2,7 @@ use std::{collections::VecDeque, io::BufRead};
 use anyhow::Result;
 use crate::args::Args;
 use std::mem::swap;
+use std::io;
 
 // a reader than takes in the input and outputs an iterator of lines
 pub trait Reader {
@@ -16,13 +17,17 @@ impl Reader for BuffReader {
     fn read(&mut self, args: &Args) -> Box<dyn Iterator<Item = Result<String>>>  {
         let file = &args.file;
         match file {
+            // handle reading from file
             Some(f) => {
                 let file = std::fs::File::open(f).unwrap();
                 let reader = std::io::BufReader::new(file);
                 let lines = reader.lines().map(|l| l.map_err(|e| e.into()));
                 Box::new(lines)
             },
-            None => Box::new(::std::iter::empty())
+            // handle reading from stdin
+            None => {
+                Box::new(std::io::stdin().lines().map(|l| l.map_err(|e| e.into())))
+            }
         }
     }
 }
