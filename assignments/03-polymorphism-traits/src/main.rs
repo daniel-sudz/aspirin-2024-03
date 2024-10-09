@@ -14,7 +14,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::{absolute, Path};
     use std::{
         io::Write,

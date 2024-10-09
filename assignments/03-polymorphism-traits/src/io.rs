@@ -94,8 +94,8 @@ mod tests {
     #[test]
     fn test_file_reader() {
         let mut tf = NamedTempFile::new().unwrap();
-        tf.write("one\ntwo\nthree".as_bytes());
-        tf.flush();
+        let _  = tf.write("one\ntwo\nthree".as_bytes());
+        let _ = tf.flush();
 
         let args = Args {
             ignore_case: false,
