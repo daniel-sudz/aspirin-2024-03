@@ -22,8 +22,6 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    #[allow(unused_must_use)]
-    #[allow(unused_variables)]
     fn test_stdin_mode() {
         let exe_path = absolute(
             Path::new(file!())
@@ -45,7 +43,7 @@ mod tests {
 
         {
             let mut proc_in = proc.stdin.take().unwrap();
-            proc_in.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
+            let _ = proc_in.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
         }
 
         let res = proc.wait_with_output().unwrap();
