@@ -73,7 +73,7 @@ impl Transformer for ColorPreprocessor {
         input: Box<dyn Iterator<Item = Result<String>>>,
         args: &Args,
     ) -> Box<dyn Iterator<Item = Result<String>>> {
-        let color = args.color.clone();
+        let color = args.color;
         match color {
             None => input,
             Some(color) => Box::new(input.map(move |s| match s {

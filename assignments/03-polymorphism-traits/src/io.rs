@@ -1,8 +1,6 @@
 use crate::args::Args;
 use anyhow::Result;
-use std::io;
-use std::mem::swap;
-use std::{collections::VecDeque, io::BufRead};
+use std::io::BufRead;
 
 // a reader than takes in the input and outputs an iterator of lines
 pub trait Reader {
@@ -42,7 +40,7 @@ impl Reader for MemoryReader {
         Box::new(
             input_lines
                 .into_iter()
-                .map(|l| Ok::<String, anyhow::Error>(l)),
+                .map(Ok::<String, anyhow::Error>),
         )
     }
 }
