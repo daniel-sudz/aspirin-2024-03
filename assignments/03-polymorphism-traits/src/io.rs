@@ -81,3 +81,38 @@ impl<'a> Writer<'a> for MemoryWriter<'a> {
     }
 }
 
+mod tests {
+    use super::*;
+    use std::{io::Write, process::{Command, Stdio}};
+    use std::path::{Path,absolute};
+    use tempfile::NamedTempFile;
+
+
+
+    #[test] 
+    fn test_file_reader() {
+        let mut tf = NamedTempFile::new().unwrap();
+        tf.write("one\ntwo\nthree".as_bytes());
+        tf.flush();
+
+        let args = Args {
+            ignore_case: false,
+            invert_match: false, 
+            regex: false,
+            color: None,
+            needle: "".to_string(),
+            file: Some(tf.path().to_path_buf()),
+        };
+    
+        let mut reader: Box<dyn Reader> = Box::new(BuffReader);
+
+        let from_disk: Vec<String> = reader.read(&args).map(|x| {
+            match x {
+                Ok(x) => x,
+                Err(e) => e.to_string(),
+            }
+        }).collect();
+
+        assert_eq!(from_disk, vec!["one", "two", "three"]);
+    }
+}
