@@ -1,10 +1,10 @@
 use anyhow::Result;
 use clap::Parser;
 
-mod transformers;
-mod args;
-mod io;
-mod processor;
+pub mod transformers;
+pub mod args;
+pub mod io;
+pub mod processor;
 
 use args::Args;
 
