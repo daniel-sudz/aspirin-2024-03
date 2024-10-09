@@ -7,10 +7,9 @@ pub trait Reader {
     fn read(&mut self, args: &Args) -> Box<dyn Iterator<Item = Result<String>>>;
 }
 
-// case sensitive preprocessor
+// buffered reader from disk
 pub struct BuffReader;
 
-// buffered reader from disk
 impl Reader for BuffReader {
     fn read(&mut self, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
         let file = &args.file;
