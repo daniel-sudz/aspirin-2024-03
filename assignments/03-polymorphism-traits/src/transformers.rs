@@ -84,6 +84,7 @@ impl Transformer for ColorPreprocessor {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

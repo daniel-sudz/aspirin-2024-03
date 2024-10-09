@@ -12,6 +12,7 @@ fn main() {
     processor::disk_processor_factory(args);
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::path::{absolute, Path};

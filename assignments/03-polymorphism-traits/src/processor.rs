@@ -44,6 +44,7 @@ pub fn disk_processor_factory<'a>(args: Args) {
     processor_factory(&mut reader, &mut writer, transformers, args);
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -83,6 +83,7 @@ impl<'a> Writer<'a> for MemoryWriter<'a> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::path::{absolute, Path};
