@@ -1,9 +1,9 @@
 use clap::Parser;
 
-pub mod transformers;
 pub mod args;
 pub mod io;
 pub mod processor;
+pub mod transformers;
 
 use args::Args;
 
@@ -14,21 +14,26 @@ fn main() {
 
 mod tests {
     use super::*;
-    use std::{io::Write, process::{Command, Stdio}};
-    use std::path::{Path,absolute};
+    use std::path::{absolute, Path};
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+    };
     use tempfile::NamedTempFile;
 
     #[test]
     #[allow(unused_must_use)]
     #[allow(unused_variables)]
     fn test_stdin_mode() {
-        let exe_path = absolute(Path::new(file!())
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("target/debug/greprs"))
-            .unwrap();
+        let exe_path = absolute(
+            Path::new(file!())
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("target/debug/greprs"),
+        )
+        .unwrap();
         let exe_string = exe_path.to_str().unwrap();
         let mut proc = Command::new(exe_string)
             .stdin(Stdio::piped())
@@ -37,7 +42,7 @@ mod tests {
             .arg("test")
             .spawn()
             .unwrap();
-        
+
         {
             let mut proc_in = proc.stdin.take().unwrap();
             proc_in.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
@@ -51,7 +56,6 @@ mod tests {
         assert_eq!(stderr, "");
     }
 
-
     #[test]
     #[allow(unused_must_use)]
     #[allow(unused_variables)]
@@ -60,13 +64,15 @@ mod tests {
         tf.write("test\n no match \ntest abc\n no match \n test123".as_bytes());
         tf.flush();
 
-        let exe_path = absolute(Path::new(file!())
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("target/debug/greprs"))
-            .unwrap();
+        let exe_path = absolute(
+            Path::new(file!())
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("target/debug/greprs"),
+        )
+        .unwrap();
         let exe_string = exe_path.to_str().unwrap();
         let proc = Command::new(exe_string)
             .stdout(Stdio::piped())
@@ -83,5 +89,4 @@ mod tests {
         assert_eq!(stderr, "");
         assert_eq!(stdout, "test\ntest abc\n test123\n");
     }
-
 }
