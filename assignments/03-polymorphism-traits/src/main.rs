@@ -10,7 +10,6 @@ use args::Args;
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    println!("{:?}", args);
-
+    processor::disk_processor_factory(args);
     Ok(())
 }
