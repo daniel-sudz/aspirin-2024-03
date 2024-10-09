@@ -12,8 +12,12 @@ pub trait Transformer {
 pub struct CaseInsensitivePreprocessor;
 
 impl Transformer for CaseInsensitivePreprocessor {
-    fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, _: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
-        Box::new(input.map(|s| Ok(s?.to_lowercase())))
+    fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
+        let ignore_case = args.ignore_case;
+        match ignore_case {
+            false => input,
+            true => Box::new(input.map(|s| Ok(s?.to_lowercase())))
+        }
     }
 }
 
@@ -43,13 +47,19 @@ pub struct NeedlePreprocessor;
 
 impl Transformer for NeedlePreprocessor {
     fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
+        let ignore_case = args.ignore_case;
         match args.regex {
             true => input,
             false => {
                 let needle = args.needle.clone();
                 Box::new(input.filter(move |s| {
                     match s {
-                        Ok(s) => s.contains(&needle),
+                        Ok(s) => {
+                            match ignore_case {
+                                true => s.to_lowercase().contains(&needle.to_lowercase()),
+                                false => s.contains(&needle),
+                            }
+                        }
                         Err(_) => false,
                     }
                 }))
