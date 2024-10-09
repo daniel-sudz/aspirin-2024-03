@@ -48,6 +48,7 @@ pub struct NeedlePreprocessor;
 impl Transformer for NeedlePreprocessor {
     fn transform(&self, input: Box<dyn Iterator<Item = Result<String>>>, args: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
         let ignore_case = args.ignore_case;
+        let invert_match = args.invert_match;
         match args.regex {
             true => input,
             false => {
@@ -55,10 +56,10 @@ impl Transformer for NeedlePreprocessor {
                 Box::new(input.filter(move |s| {
                     match s {
                         Ok(s) => {
-                            match ignore_case {
+                            (match ignore_case {
                                 true => s.to_lowercase().contains(&needle.to_lowercase()),
                                 false => s.contains(&needle),
-                            }
+                            } ^ invert_match)
                         }
                         Err(_) => false,
                     }
