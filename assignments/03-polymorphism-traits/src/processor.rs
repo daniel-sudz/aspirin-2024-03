@@ -27,6 +27,38 @@ fn memory_processor_factory<'a>(args: Args, input: Vec<String>, output: &'a mut 
     let transformers: Vec<Box<dyn transformers::Transformer>> = vec![
         Box::new(transformers::CaseInsensitivePreprocessor),
         Box::new(transformers::RegexPreprocessor),
+        Box::new(transformers::NeedlePreprocessor)
     ];
     processor_factory(&mut reader, &mut writer, transformers, args);
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn internal() {
+        let result = 4;
+        assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn basic_memory_processor() {
+        let mut output: Vec<String> = vec![];
+        let mut error: Vec<String> = vec![];
+        let input = vec!["Hello, World!".to_string(), "no match".to_string()];
+        let args = Args {
+            ignore_case: false,
+            invert_match: false,
+            regex: false,
+            color: None,
+            needle: "Hello".to_string(),
+            file: None,
+        };
+        memory_processor_factory(args, input, &mut output, &mut error);
+        assert_eq!(output, vec!["Hello, World!"]);
+        assert_eq!(error, vec![] as Vec<String>);
+    }
+
 }
