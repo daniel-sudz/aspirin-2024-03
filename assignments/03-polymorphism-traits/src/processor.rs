@@ -33,9 +33,9 @@ pub fn memory_processor_factory<'a>(
     processor_factory(&mut reader, &mut writer, transformers, args);
 }
 
-pub fn disk_processor_factory<'a>(args: Args) {
+pub fn disk_processor_factory(args: Args) {
     let mut reader: Box<dyn io::Reader> = Box::new(io::BuffReader);
-    let mut writer: Box<dyn io::Writer<'a> + 'a> = Box::new(io::StdoutWriter);
+    let mut writer: Box<dyn io::Writer> = Box::new(io::StdoutWriter);
     let transformers: Vec<Box<dyn transformers::Transformer>> = vec![
         Box::new(transformers::RegexPreprocessor),
         Box::new(transformers::NeedlePreprocessor),

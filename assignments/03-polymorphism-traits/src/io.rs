@@ -37,11 +37,7 @@ impl Reader for MemoryReader {
     fn read(&mut self, _: &Args) -> Box<dyn Iterator<Item = Result<String>>> {
         let mut input_lines: Vec<String> = vec![];
         std::mem::swap(&mut input_lines, &mut self.input);
-        Box::new(
-            input_lines
-                .into_iter()
-                .map(Ok::<String, anyhow::Error>),
-        )
+        Box::new(input_lines.into_iter().map(Ok::<String, anyhow::Error>))
     }
 }
 
@@ -84,14 +80,14 @@ impl<'a> Writer<'a> for MemoryWriter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
     fn test_file_reader() {
         let mut tf = NamedTempFile::new().unwrap();
-        let _  = tf.write("one\ntwo\nthree".as_bytes());
+        let _ = tf.write("one\ntwo\nthree".as_bytes());
         let _ = tf.flush();
 
         let args = Args {
