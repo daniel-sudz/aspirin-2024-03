@@ -1,6 +1,7 @@
 use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
+use regex::Regex;
 
 pub struct DelMap {
     pub key: String,
@@ -13,7 +14,7 @@ impl Map for DelMap {
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
         let pattern = r"del\(\.(\w+)\)";
-        let re: &'static Regex = &Regex::new(pattern).unwrap();
+        let re: Regex = Regex::new(pattern).unwrap();
     
         match re.captures(input) {
             Some(captures) => {

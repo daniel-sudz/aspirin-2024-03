@@ -1,7 +1,7 @@
 use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
-
+use regex::Regex;
 pub struct ArrayIteratorMap {
     pub from: usize,
     pub to: usize,
@@ -19,8 +19,8 @@ impl Map for ArrayIteratorMap {
     }
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
-        let pattern: &'static str = r"\.\[(\d+):(\d+)\]";
-        let re: &'static Regex = &Regex::new(pattern).unwrap();
+        let pattern = r"\.\[(\d+):(\d+)\]";
+        let re: Regex = Regex::new(pattern).unwrap();
     
         match re.captures(input) {
             Some(captures) => {

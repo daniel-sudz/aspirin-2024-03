@@ -7,5 +7,12 @@ impl Map for IdentityMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         value
     }
+
+    fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
+        match input == "." {
+            true => Ok(Box::new(IdentityMap)),
+            false => anyhow::bail!("failed to parse identity"),
+        }
+    }
 }
 

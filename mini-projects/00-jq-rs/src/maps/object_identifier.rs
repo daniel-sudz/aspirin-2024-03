@@ -1,7 +1,7 @@
 use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
-
+use regex::Regex;
 pub struct ObjectIdentifierMap {
     pub key: String,
 }
@@ -20,24 +20,15 @@ impl Map for ObjectIdentifierMap {
     }
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
-        let pattern: &'static str = r"\.\[(\d+):(\d+)\]";
-        let re: &'static Regex = &Regex::new(pattern).unwrap();
+        let pattern = r"\.(\w+)";
+        let re: Regex = Regex::new(pattern).unwrap();
     
         match re.captures(input) {
             Some(captures) => {
-                let first = captures.get(1).unwrap().as_str();
-                let second = captures.get(2).unwrap().as_str();
-                match (first.parse::<usize>(), second.parse::<usize>()) {
-                    (Ok(start), Ok(end)) => {
-                        return Ok(Box::new(ArrayIteratorMap {
-                            from: start,
-                            to: end,
-                        }));
-                    }
-                    _ => anyhow::bail!("failed to parse array slice"),
-                }
+                let key = captures.get(1).unwrap().as_str();
+                return Ok(Box::new(ObjectIdentifierMap { key: key.to_string() }))
             },
-            None => anyhow::bail!("failed to parse array slice"),
+            None => anyhow::bail!("failed to parse object identifier"),
         }
     }
 }
