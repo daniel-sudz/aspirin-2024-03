@@ -2,12 +2,12 @@ use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
 use regex::Regex;
-pub struct ArrayIteratorMap {
+pub struct ArraySliceMap {
     pub from: usize,
     pub to: usize,
 }
 
-impl Map for ArrayIteratorMap {
+impl Map for ArraySliceMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         let value = value?;
         let result: Result<Vec<Value>> = value.iter().map(|v| {
@@ -28,7 +28,7 @@ impl Map for ArrayIteratorMap {
                 let second = captures.get(2).unwrap().as_str();
                 match (first.parse::<usize>(), second.parse::<usize>()) {
                     (Ok(start), Ok(end)) => {
-                        return Ok(Box::new(ArrayIteratorMap {
+                        return Ok(Box::new(ArraySliceMap {
                             from: start,
                             to: end,
                         }));
