@@ -10,41 +10,11 @@ use anyhow::Result;
 use regex::Regex;
 
 fn array_slice_match(input: &str) -> Result<Box<dyn Map>> {
-    let pattern: &'static str = r"\.\[(\d+):(\d+)\]";
-    let re: &'static Regex = &Regex::new(pattern).unwrap();
-
-    match re.captures(input) {
-        Some(captures) => {
-            let first = captures.get(1).unwrap().as_str();
-            let second = captures.get(2).unwrap().as_str();
-            match (first.parse::<usize>(), second.parse::<usize>()) {
-                (Ok(start), Ok(end)) => {
-                    return Ok(Box::new(ArrayIteratorMap {
-                        from: start,
-                        to: end,
-                    }));
-                }
-                _ => anyhow::bail!("failed to parse array slice"),
-            }
-        },
-        None => anyhow::bail!("failed to parse array slice"),
-    }
+   
 }
 
 fn del_slice_match(input: &str) -> Result<Box<dyn Map>> {
-    let pattern = r"del\(\.(\w+)\)";
-    let re: &'static Regex = &Regex::new(pattern).unwrap();
-
-    match re.captures(input) {
-        Some(captures) => {
-            let key = captures.get(1).unwrap().as_str();
-            Ok(Box::new(DelMap {
-                key: key.to_string(),
-            }))
-        }
-        None => anyhow::bail!("failed to parse del slice"),
-    }
-}
+   }
 
 fn parse_sub(input: String) -> Result<Box<dyn Map>> {
     let input = input.trim();
