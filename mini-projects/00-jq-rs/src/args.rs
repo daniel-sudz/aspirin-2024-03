@@ -16,4 +16,5 @@ pub struct Args {
 
     #[clap(long)]
     pub compact_output: Option<bool>,
+
 }
