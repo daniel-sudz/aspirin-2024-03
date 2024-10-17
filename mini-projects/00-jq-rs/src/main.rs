@@ -2,6 +2,7 @@ mod args;
 mod parser;
 mod processor;
 mod formatter;
+mod samples;
 use args::Args;
 use clap::Parser;
 use serde_json::Value;

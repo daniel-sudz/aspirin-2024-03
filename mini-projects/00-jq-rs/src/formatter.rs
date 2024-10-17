@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::env;
 use anyhow::Result;
 
@@ -50,9 +50,12 @@ pub fn format(input: Value, sort_keys: bool) -> Result<String> {
         Value::String(s) => color_string(&format!("\"{}\"", s), JqColorType::String),
         Value::Array(a) => {
             let mut result: String = color_string("[", JqColorType::Array)?;
-            for e in a {
-                let formatted_element = format(e, sort_keys)?;
+            for (i, e) in a.iter().enumerate() {
+                let formatted_element = format(e.clone(), sort_keys)?;
                 result.push_str(&formatted_element);
+                if i < a.len() - 1 {
+                    result.push_str(", ");
+                }
             }
             result.push_str(&color_string("]", JqColorType::Array)?);
             Ok(result)
@@ -67,21 +70,26 @@ pub fn format(input: Value, sort_keys: bool) -> Result<String> {
             for (i, k) in keys.iter().enumerate() {
                 let v = o.get(k).unwrap().clone();
                 result.push_str(&color_string(&format!("{k}"), JqColorType::ObjectKey)?);
-                result.push_str(":");
+                result.push_str(": ");
                 result.push_str(&format(v, sort_keys)?);
                 if i < &keys.len() - 1 {
                     result.push_str(",\n");
                 }
             }
+            result.push_str(&color_string("}", JqColorType::Object)?);
             Ok(result)
         }
     }
 }
 
 mod tests {
+    use super::*;
+    use crate::samples::{ALL_TYPES, ARRAY};
 
     #[test]
     fn test_basic_format() {
-
+        let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
+        let formatted = format(input, true).unwrap();
+        println!("{}", formatted);
     } 
 }

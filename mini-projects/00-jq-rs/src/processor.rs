@@ -25,30 +25,7 @@ pub fn process_from_string(process_string: String, input: String) -> Result<Stri
 
 mod tests{
     use super::*;
-
-    const ALL_TYPES: &str = r#"
-        {
-            "fizz": "buzz",
-            "baz": null,
-            "fuzz": true,
-            "bizz": 22.0,
-            "biz": 42,
-            "fizzes": [
-                "buzz",
-                null,
-                true,
-                22.0,
-                42.0
-            ]
-        }
-    "#;
-    const ARRAY: &str = r#"
-    [
-        "one",
-        "two",
-        "three"
-    ]
-    "#;
+    use crate::samples::{ALL_TYPES, ARRAY};
 
     #[test]
     fn test_object_identity_map_example() {
