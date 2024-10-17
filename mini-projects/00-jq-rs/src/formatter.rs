@@ -89,10 +89,13 @@ pub fn format(input: Value, sort_keys: bool, indent: usize, cur_indent: usize, c
             for (i, k) in keys.iter().enumerate() {
                 let v = o.get(k).unwrap().clone();
                 result.push_str(&color_string(&format!("\"{k}\""), JqColorType::ObjectKey, disable_colors)?);
-                result.push_str(": ");
+                result.push_str(":");
+                if !compact {
+                    result.push_str(" ");
+                }
                 result.push_str(&format(v, sort_keys, indent, cur_indent + indent, compact, disable_colors)?);
                 if i < &keys.len() - 1 {
-                    result.push_str(",\n");
+                    result.push_str(if compact {","} else {",\n"});
                     result.push_str(&" ".repeat(cur_indent + indent));
                 }
             }
@@ -159,4 +162,13 @@ r#"{
         assert_eq!(formatted, expected);
     }
 
+    // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." all_types.json
+    #[test]
+    fn test_compact_output() {
+        env::set_var("JQ_COLORS", ":::::::");
+        let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
+        let formatted = format(input, true, 2, 0, true, true).unwrap();
+        let expected = r#"{"baz":null,"biz":42,"bizz":22.0,"fizz":"buzz","fizzes":["buzz",null,true,22.0,42.0],"fuzz":true}"#;
+        assert_eq!(formatted, expected);
+    }
 }
