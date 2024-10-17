@@ -133,4 +133,30 @@ r#"{
 }"#;
         assert_eq!(formatted, expected);
     }
+
+
+    // MATCHES JQ_COLORS="::::::::" jq --sort-keys "." all_types.json
+    #[test]
+    fn test_sort_keys() {
+        env::set_var("JQ_COLORS", ":::::::");
+        let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
+        let formatted = format(input, true, 2, 0, false, true).unwrap();
+        let expected = 
+r#"{
+  "baz": null,
+  "biz": 42,
+  "bizz": 22.0,
+  "fizz": "buzz",
+  "fizzes": [
+    "buzz",
+    null,
+    true,
+    22.0,
+    42.0
+  ],
+  "fuzz": true
+}"#;
+        assert_eq!(formatted, expected);
+    }
+
 }
