@@ -27,20 +27,27 @@ mod tests{
     use super::*;
 
     const ALL_TYPES: &str = r#"
-    {
-    "fizz": "buzz",
-    "baz": null,
-    "fuzz": true,
-    "bizz": 22.0,
-    "biz": 42,
-    "fizzes": [
-        "buzz",
-        null,
-        true,
-        22.0,
-        42.0
+        {
+            "fizz": "buzz",
+            "baz": null,
+            "fuzz": true,
+            "bizz": 22.0,
+            "biz": 42,
+            "fizzes": [
+                "buzz",
+                null,
+                true,
+                22.0,
+                42.0
+            ]
+        }
+    "#;
+    const ARRAY: &str = r#"
+    [
+        "one",
+        "two",
+        "three"
     ]
-}
     "#;
 
     #[test]
@@ -53,7 +60,7 @@ mod tests{
     #[test]
     fn test_array_index_example() {
         let input = ".[0]".to_string();
-        let res = process_from_string(input, ALL_TYPES.to_string()).unwrap();
+        let res = process_from_string(input, ARRAY.to_string()).unwrap();
         assert_eq!(res, "\"one\"");
     }
 }
