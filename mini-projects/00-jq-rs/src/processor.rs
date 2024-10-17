@@ -63,4 +63,11 @@ mod tests{
         let res = process_from_string(input, ARRAY.to_string()).unwrap();
         assert_eq!(res, "\"one\"");
     }
+
+    #[test]
+    fn test_array_slice_example() {
+        let input = ".[0:2]".to_string();
+        let res = process_from_string(input, ARRAY.to_string()).unwrap();
+        assert_eq!(res, "[\"one\",\"two\"]");
+    }
 }
