@@ -95,8 +95,13 @@ pub fn format(input: Value, sort_keys: bool, indent: usize, cur_indent: usize, c
                 }
                 result.push_str(&format(v, sort_keys, indent, cur_indent + indent, compact, disable_colors)?);
                 if i < &keys.len() - 1 {
-                    result.push_str(if compact {","} else {",\n"});
-                    result.push_str(&" ".repeat(cur_indent + indent));
+                    if compact {
+                        result.push_str(",");
+                    }
+                    else {
+                        result.push_str(",\n");
+                        result.push_str(&" ".repeat(cur_indent + indent));
+                    }
                 }
             }
             if !compact {
