@@ -10,9 +10,12 @@ use anyhow::Result;
 use std::fs;
 pub mod maps;
 
-fn main() {
+fn main() -> Result<()> {
     let args = Args::parse();
-    
+    let input = args.get_input()?;
+    //let output = processor::process(input, &args)?;
+    //println!("{}", output);
+    Ok(())
 }
 
 mod tests {
