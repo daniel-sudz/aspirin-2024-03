@@ -34,7 +34,8 @@ impl Map for AddMap {
                 (Value::Bool(lhs), Value::Bool(rhs)) => Value::from(lhs ^ rhs),
 
                 // string upcasts everything to string 
-                (Value::String(lhs), rhs)=> Value::from(lhs.to_string() + rhs.to_string().as_str()),
+                (Value::String(lhs), Value::String(rhs))=> Value::from(lhs.clone() + rhs.as_str()),
+                (Value::String(lhs), rhs)=> Value::from(lhs.clone() + rhs.to_string().as_str()),
                 (lhs, Value::String(rhs))=> Value::from(lhs.to_string() + rhs.to_string().as_str()),
 
                 // arrays concat with arrays and otherwise give error
@@ -72,4 +73,40 @@ mod tests {
         assert_eq!(value.unwrap_err().to_string(), "expected array but recieved iterator");
 
     }
+
+    #[test]
+    fn test_add_integers() {
+        let add_map = AddMap {};
+        let values: Vec<Value> = vec![Value::from(vec![1,2])];
+        let value = add_map.map(Ok(values));
+        assert_eq!(value.unwrap()[0], 3);
+
+    }
+
+    #[test]
+    fn test_mixed_integer_floats() {
+        let add_map = AddMap {};
+        let values: Vec<Value> = vec![serde_json::from_str("[1,2.0,3]").unwrap()];
+        let value = add_map.map(Ok(values));
+        assert_eq!(value.unwrap()[0], 6.0);
+    }
+
+    #[test]
+    fn test_string_concat() {
+        let add_map = AddMap {};
+        let values: Vec<Value> = vec![serde_json::from_str("[\"a\",\"b\"]").unwrap()];
+        let value = add_map.map(Ok(values));
+        assert_eq!(value.unwrap()[0], "ab");
+    }
+
+    #[test]
+    fn test_array_concat() {
+        let add_map = AddMap {};
+        let values: Vec<Value> = vec![serde_json::from_str("[[1,2],[3,4]]").unwrap()];
+        let value = add_map.map(Ok(values));
+        assert_eq!(value.unwrap()[0].to_string(), "[1,2,3,4]");
+    }
+
+
+
 }
