@@ -11,6 +11,6 @@ use std::fs;
 pub mod maps;
 
 fn main() {
-    //let args = Args::parse();
+    let args = Args::parse();
     
 }
