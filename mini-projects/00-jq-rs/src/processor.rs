@@ -55,7 +55,7 @@ mod tests{
     fn test_array_index_example() {
         let args = Args {
             sort_keys: true,
-            indent: Some(2),
+            indent: None,
             compact_output: true,
             monochrome_output: true,
             color_output: false,
@@ -70,7 +70,7 @@ mod tests{
     fn test_array_slice_example() {
         let args = Args {
             sort_keys: true,
-            indent: Some(2),
+            indent: None,
             compact_output: true,
             monochrome_output: true,
             color_output: false,
@@ -80,4 +80,20 @@ mod tests{
         let res = process_from_string(&args).unwrap();
         assert_eq!(res, "[\"one\",\"two\"]");
     }
+
+    #[test]
+    fn test_add_pipe_example() {
+        let args = Args {
+            sort_keys: true,
+            indent: None,
+            compact_output: true,
+            monochrome_output: true,
+            color_output: false,
+            command: ". | add".to_string(),
+            file: Some(absolute(Path::new("sample_data/array.json")).unwrap()),
+        };
+        let res = process_from_string(&args).unwrap();
+        assert_eq!(res, "\"onetwothree\"");
+    }
+
 }

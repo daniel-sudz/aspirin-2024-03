@@ -90,4 +90,11 @@ r#"{
 "#;
         test_from_sample_data("all_types.json", args, expected_stdout, "").unwrap();
     }
+
+    #[test]
+    fn test_add_pipe_example() {
+        let args: Vec<&str> = vec!["--monochrome-output", "--compact-output", ". | add"];
+        let expected_stdout = "\"onetwothree\"\n";
+        test_from_sample_data("array.json", args, expected_stdout, "").unwrap();
+    }
 }

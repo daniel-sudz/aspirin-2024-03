@@ -22,7 +22,7 @@ pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
     ];
     let ops: Result<Vec<Box<dyn Map>>> = input.split("|").map(|op| {
         for map in maps.iter() {
-            if let Ok(map) = map.command_match(op) {
+            if let Ok(map) = map.command_match(op.to_string().trim()) {
                 return Ok(map);
             }
         }
