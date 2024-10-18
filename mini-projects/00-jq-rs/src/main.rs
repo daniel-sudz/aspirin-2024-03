@@ -72,6 +72,22 @@ mod tests {
     #[test]
     fn test_all_type_identity() {
         let args: Vec<&str> = vec!["--monochrome-output", "."];
-        test_from_sample_data("all_types.json", args, "", "").unwrap();
+        let expected_stdout =
+r#"{
+  "fizz": "buzz",
+  "baz": null,
+  "fuzz": true,
+  "bizz": 22.0,
+  "biz": 42,
+  "fizzes": [
+    "buzz",
+    null,
+    true,
+    22.0,
+    42.0
+  ]
+}
+"#;
+        test_from_sample_data("all_types.json", args, expected_stdout, "").unwrap();
     }
 }
