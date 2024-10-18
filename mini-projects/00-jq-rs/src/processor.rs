@@ -34,9 +34,7 @@ pub fn process_from_string(args: &Args) -> Result<String> {
 
 mod tests{
     use std::path::{absolute, Path};
-
     use super::*;
-    use crate::samples::{ALL_TYPES, ARRAY};
 
     #[test]
     fn test_object_identity_map_example() {
