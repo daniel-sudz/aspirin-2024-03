@@ -6,69 +6,28 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[clap(long)]
-    pub color_output: Option<bool>,
+    #[clap(long, action, conflicts_with = "monochrome_output")]
+    pub color_output: bool,
 
-    #[clap(long)]
-    pub monochrome_output: Option<bool>,
+    #[clap(long, action, conflicts_with = "color_output")]
+    pub monochrome_output: bool,
 
-    #[clap(long)]
-    pub sort_keys: Option<bool>,
+    #[clap(long, action)]
+    pub sort_keys: bool,
 
-    #[clap(long)]
+    #[clap(long, conflicts_with = "compact_output")]
     pub indent: Option<u8>,
 
-    #[clap(long)]
-    pub compact_output: Option<bool>,
+    #[clap(long, action, conflicts_with = "indent")]
+    pub compact_output: bool,
+
+    #[clap(required = true)]
+    pub command: String,
 
     pub file: Option<PathBuf>,
-
 }
 
 impl Args {
-    pub fn validate(&self) -> Result<()> {
-        match (self.color_output, self.monochrome_output) {
-            (Some(true), Some(true)) | (Some(false), Some(false)) => anyhow::bail!("cannot specify both color and monochrome output"),
-            _ => () 
-        }
-        match (self.compact_output, self.indent) {
-            (Some(true), Some(_)) | (Some(false), Some(_)) => anyhow::bail!("cannot specify both compact and indent output"),
-            _ => () 
-        }
-        Ok(())
-    }
-
-    pub fn is_color_output(&self) -> Result<bool> {
-        match self.color_output {
-            Some(true) => Ok(true),
-            Some(false) => Ok(false),
-            None => Ok(false)
-        }
-    }
-
-    pub fn is_sort_keys(&self) -> Result<bool> {
-        match self.sort_keys {
-            Some(true) => Ok(true),
-            Some(false) => Ok(false),
-            None => Ok(false)
-        }
-    }
-
-    pub fn is_compact_output(&self) -> Result<bool> {
-        match self.compact_output {
-            Some(true) => Ok(true),
-            Some(false) => Ok(false),
-            None => Ok(false)
-        }
-    }
-
-    pub fn get_indent(&self) -> Result<u8> {
-        match self.indent {
-            Some(x) => Ok(x),
-            None => Ok(2)
-        }
-    }
-
     pub fn get_input(&self) -> Result<Value> {
         match &self.file {
             Some(f) => {
