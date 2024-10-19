@@ -17,7 +17,7 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    
+
     use anyhow::Result;
     use std::{
         path::{absolute, Path},

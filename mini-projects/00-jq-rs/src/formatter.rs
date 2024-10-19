@@ -142,7 +142,7 @@ pub fn format(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::samples::ALL_TYPES;
+    use crate::samples::{ALL_TYPES, ARRAY};
 
     // MATCHES JQ_COLORS="::::::::" jq "." all_types.json
     #[test]
@@ -215,11 +215,21 @@ mod tests {
 
     // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." all_types.json
     #[test]
-    fn test_compact_output() {
+    fn test_compact_output_1() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
         let formatted = format(input, true, 2, 0, true, true).unwrap();
         let expected = r#"{"baz":null,"biz":42,"bizz":22.0,"fizz":"buzz","fizzes":["buzz",null,true,22.0,42.0],"fuzz":true}"#;
+        assert_eq!(formatted, expected);
+    }
+
+    // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." array.json
+    #[test]
+    fn test_compact_output_2() {
+        env::set_var("JQ_COLORS", ":::::::");
+        let input: Value = serde_json::from_str(ARRAY).unwrap();
+        let formatted = format(input, true, 2, 0, true, true).unwrap();
+        let expected = r#"["one","two","three"]"#;
         assert_eq!(formatted, expected);
     }
 }

@@ -5,8 +5,8 @@ use crate::maps::del_array::DelMapArray;
 use crate::maps::del_key::DelMapKey;
 use crate::maps::identity::IdentityMap;
 use crate::maps::length::LengthMap;
-use crate::maps::Map;
 use crate::maps::object_identifier::ObjectIdentifierMap;
+use crate::maps::Map;
 use anyhow::Result;
 
 pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
@@ -39,6 +39,4 @@ pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
 }
 
 #[cfg(test)]
-mod tests {
-    
-}
+mod tests {}
