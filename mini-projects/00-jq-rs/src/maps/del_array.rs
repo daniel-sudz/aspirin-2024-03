@@ -3,6 +3,10 @@ use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
 
+// implements the "del(.[from:to])" operation
+// deletes the slice of the array from the given from index to the given to index
+// returns the remaining elements of the array
+// returns an error if the value is not an array
 pub struct DelMapArray {
     pub from: usize,
     pub to: usize,

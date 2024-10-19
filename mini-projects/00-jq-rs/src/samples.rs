@@ -1,3 +1,5 @@
+// officially provided samples from the examples
+
 #[cfg(test)]
 pub const ALL_TYPES: &str = r#"
         {

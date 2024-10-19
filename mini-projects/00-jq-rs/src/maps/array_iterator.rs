@@ -2,6 +2,9 @@ use crate::maps::map::Map;
 use anyhow::Result;
 use serde_json::Value;
 
+// implements the ".[]" operation
+// iterates over the array and returns the array elements
+// returns an error if the value is not an array
 pub struct ArrayIteratorMap {}
 
 impl Map for ArrayIteratorMap {

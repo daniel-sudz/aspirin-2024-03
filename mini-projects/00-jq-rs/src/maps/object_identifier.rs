@@ -6,6 +6,8 @@ pub struct ObjectIdentifierMap {
     pub key: String,
 }
 
+// given a JSON value represented by serde_json::Value, returns the value of the given key
+// if the key is not found, returns null
 impl Map for ObjectIdentifierMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         let value = value?;

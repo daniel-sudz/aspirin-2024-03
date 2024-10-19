@@ -4,6 +4,7 @@ use crate::parser::parse;
 use anyhow::Result;
 use serde_json::Value;
 
+// given an iterator formats every value in the iterator
 pub fn output_to_string(input: Result<Vec<Value>>, args: &Args) -> Result<String> {
     let input = input?;
     let mut result = String::new();
@@ -23,6 +24,7 @@ pub fn output_to_string(input: Result<Vec<Value>>, args: &Args) -> Result<String
     Ok(result)
 }
 
+// glues together the parser and the formatter
 pub fn process_from_string(args: &Args) -> Result<String> {
     let json = args.get_input()?;
     let ops = parse(args.command.clone())?;

@@ -10,6 +10,9 @@ use crate::maps::object_identifier::ObjectIdentifierMap;
 use crate::maps::Map;
 use anyhow::Result;
 
+// parses the jq command into a list of maps
+// maps are split by the pipe operator and then matched against the available maps
+// maps use a regex to match the command and then parse the arguments
 pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
     let maps: Vec<Box<dyn Map>> = vec![
         Box::new(DelMapKey {
@@ -40,5 +43,6 @@ pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
     ops
 }
 
+// the parser is tested implicitly in the integration cli test so no additional tests are needed
 #[cfg(test)]
 mod tests {}

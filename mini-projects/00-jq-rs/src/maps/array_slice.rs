@@ -4,6 +4,10 @@ use regex::Regex;
 use serde_json::Value;
 use std::cmp::min;
 
+// implements the ".[from:to]" operation
+// slices the array from the given from index to the given to index
+// returns the sliced array
+// returns an error if the value is not an array
 pub struct ArraySliceMap {
     pub from: usize,
     pub to: usize,

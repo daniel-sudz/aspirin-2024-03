@@ -3,6 +3,8 @@ use anyhow::Result;
 use serde_json::Value;
 pub struct IdentityMap;
 
+// implements the "." operation
+// returns the value unchanged
 impl Map for IdentityMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         value

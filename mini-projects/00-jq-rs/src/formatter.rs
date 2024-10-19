@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde_json::Value;
 use std::env;
 
+// based on the JQ_COLORS environment variable https://jqlang.github.io/jq/manual/
 enum JqColorType {
     Null,
     False,
@@ -13,6 +14,7 @@ enum JqColorType {
     ObjectKey,
 }
 
+// parses the JQ_COLORS environment variable according to the JQ manual
 fn get_jq_colors() -> Result<Vec<String>> {
     let jq_colors =
         env::var("JQ_COLORS").unwrap_or("0;90:0;37:0;37:0;37:0;32:1;37:1;37:1;34".to_string());
@@ -23,6 +25,7 @@ fn get_jq_colors() -> Result<Vec<String>> {
     Ok(jq_colors)
 }
 
+// colors the input string according to the JQ manual
 fn color_string(input: &str, t: JqColorType, disable: bool) -> Result<String> {
     if disable {
         return Ok(input.to_string());
@@ -41,6 +44,10 @@ fn color_string(input: &str, t: JqColorType, disable: bool) -> Result<String> {
     Ok(format!("\x1b[{color_code}m{input}\x1b[0m"))
 }
 
+// given a JSON value represented by serde_json::Value, formats it according to the JQ manual
+// given the recursive structure of JSON we approach this problem recursively
+// support provided for --sort-keys, --indent, --compact-output, and --monochrome-output flags
+// indent levels are pushed/poped as we recurse into the JSON structure
 pub fn format(
     input: Value,
     sort_keys: bool,

@@ -3,6 +3,9 @@ use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
 
+// implements the ".[index]" operation
+// returns the element at the given index
+// returns an error if the value is not an array
 pub struct ArrayIndexMap {
     pub index: usize,
 }

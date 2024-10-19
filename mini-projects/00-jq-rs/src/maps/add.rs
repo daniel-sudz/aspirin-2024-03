@@ -2,6 +2,12 @@ use crate::maps::map::Map;
 use anyhow::{Context, Result};
 use serde_json::Value;
 
+// implements the "add" operation
+// for numbers we add them together
+// for arrays we concatenate the elements of the array
+// for strings we upcasts everything to a string
+// if a null is present it consumes everything to null
+// in other cases we return an error
 pub struct AddMap {}
 
 impl Map for AddMap {

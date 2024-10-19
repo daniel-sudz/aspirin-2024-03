@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
+// Args is testing implicitly in the integration cli test
 #[derive(Parser, Debug)]
 pub struct Args {
     #[clap(long, action, conflicts_with = "monochrome_output")]
@@ -27,6 +28,7 @@ pub struct Args {
     pub file: Option<PathBuf>,
 }
 
+// allow swapping between file and stdin input
 impl Args {
     pub fn get_input(&self) -> Result<Value> {
         match &self.file {

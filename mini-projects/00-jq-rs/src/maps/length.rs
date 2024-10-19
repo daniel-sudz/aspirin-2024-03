@@ -2,6 +2,11 @@ use crate::maps::Map;
 use anyhow::Result;
 use serde_json::Value;
 
+// implements the "length" operation
+// for arrays we return the number of elements
+// for objects we return the number of keys
+// for strings we return the number of characters
+// for other types we return an error
 pub struct LengthMap {}
 
 impl Map for LengthMap {

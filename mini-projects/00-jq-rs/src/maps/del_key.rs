@@ -3,6 +3,8 @@ use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
 
+// implements the "del(.key)" operation
+// deletes the given key from the object
 pub struct DelMapKey {
     pub key: String,
 }
