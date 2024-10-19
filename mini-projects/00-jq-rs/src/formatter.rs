@@ -143,9 +143,11 @@ pub fn format(
 mod tests {
     use super::*;
     use crate::samples::{ALL_TYPES, ARRAY};
+    use serial_test::serial;
 
     // MATCHES JQ_COLORS="::::::::" jq "." all_types.json
     #[test]
+    #[serial]
     fn test_basic_format() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
@@ -169,6 +171,7 @@ mod tests {
 
     // MATCHES JQ_COLORS="::::::::" jq --sort-keys "." all_types.json
     #[test]
+    #[serial]
     fn test_sort_keys() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
@@ -192,6 +195,7 @@ mod tests {
 
     // MATCHES JQ_COLORS="::::::::" jq --indent 7 --sort-keys "." all_types.json
     #[test]
+    #[serial]
     fn test_custom_indent() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
@@ -215,6 +219,7 @@ mod tests {
 
     // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." all_types.json
     #[test]
+    #[serial]
     fn test_compact_output_1() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ALL_TYPES).unwrap();
@@ -225,11 +230,23 @@ mod tests {
 
     // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." array.json
     #[test]
+    #[serial]
     fn test_compact_output_2() {
         env::set_var("JQ_COLORS", ":::::::");
         let input: Value = serde_json::from_str(ARRAY).unwrap();
         let formatted = format(input, true, 2, 0, true, true).unwrap();
         let expected = r#"["one","two","three"]"#;
+        assert_eq!(formatted, expected);
+    }
+
+    // MATCHES JQ_COLORS="::::::::" jq --sort-keys --compact-output "." array.json
+    #[serial]
+    #[test]
+    fn test_default_colors() {
+        env::remove_var("JQ_COLORS");
+        let input: Value = serde_json::from_str(ARRAY).unwrap();
+        let formatted = format(input, false, 2, 0, false, false).unwrap();
+        let expected = "\u{1b}[1;37m[\u{1b}[0m\n  \u{1b}[0;32m\"one\"\u{1b}[0m,\n  \u{1b}[0;32m\"two\"\u{1b}[0m,\n  \u{1b}[0;32m\"three\"\u{1b}[0m\n\u{1b}[1;37m]\u{1b}[0m";
         assert_eq!(formatted, expected);
     }
 }
