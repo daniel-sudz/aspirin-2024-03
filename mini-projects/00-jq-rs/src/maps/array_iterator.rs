@@ -13,7 +13,7 @@ impl Map for ArrayIteratorMap {
                 let value = value[0].clone();
                 match value {
                     Value::Array(array) => {
-                        let value: Vec<Value> = array.iter().cloned().collect();
+                        let value: Vec<Value> = array.to_vec();
                         Ok(value)
                     }
                     _ => anyhow::bail!("cannot iterate over non-array value"),
