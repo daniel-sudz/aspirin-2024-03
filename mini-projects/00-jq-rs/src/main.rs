@@ -111,8 +111,9 @@ r#"{
     // replicates jq "del(.[0:1])" array.json --monochrome-output --compact-output --sort-keys
     #[test]
     fn test_del_array_slice() {
-        let args: Vec<&str> = vec!["--monochrome-output", "--compact-output", "sort-keys", ". | del(.[0:1])"];
-        let expected_stdout = r#"["two", "three"]"#;
+        let args: Vec<&str> = vec!["--monochrome-output", "--compact-output", "--sort-keys", ". | del(.[0:1])"];
+        let expected_stdout = r#"["two","three"]
+"#;
         test_from_sample_data("array.json", args, expected_stdout, "").unwrap();
     }
 }
