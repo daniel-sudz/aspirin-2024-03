@@ -1,9 +1,8 @@
-use serde_json::Value;
 use crate::maps::maps::Map;
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
+use serde_json::Value;
 
-pub struct AddMap {
-}
+pub struct AddMap {}
 
 impl Map for AddMap {
     fn map(&self, values: Result<Vec<Value>>) -> Result<Vec<Value>> {
@@ -17,7 +16,7 @@ impl Map for AddMap {
 
         for value in value[1..].iter() {
             sum = match (&sum, &value) {
-                 // null consumes anything to null
+                // null consumes anything to null
                 (Value::Null, _) => sum.clone(),
                 (_, Value::Null) => Value::from(()),
 
@@ -25,27 +24,38 @@ impl Map for AddMap {
                 (Value::Number(lhs), Value::Number(rhs)) => {
                     match (lhs.is_i64() || lhs.is_u64(), rhs.is_i64() || rhs.is_u64()) {
                         (true, true) => Value::from(lhs.as_i64().unwrap() + rhs.as_i64().unwrap()),
-                        (_,_) => Value::from(lhs.as_f64().unwrap() + rhs.as_f64().unwrap()),
+                        (_, _) => Value::from(lhs.as_f64().unwrap() + rhs.as_f64().unwrap()),
                     }
                 }
-                (Value::Number(lhs), rhs) => Value::from(lhs.to_string() + rhs.to_string().as_str()),
+                (Value::Number(lhs), rhs) => {
+                    Value::from(lhs.to_string() + rhs.to_string().as_str())
+                }
 
                 // booleans add with booleans via xor
                 (Value::Bool(lhs), Value::Bool(rhs)) => Value::from(lhs ^ rhs),
 
-                // string upcasts everything to string 
-                (Value::String(lhs), Value::String(rhs))=> Value::from(lhs.clone() + rhs.as_str()),
-                (Value::String(lhs), rhs)=> Value::from(lhs.clone() + rhs.to_string().as_str()),
-                (lhs, Value::String(rhs))=> Value::from(lhs.to_string() + rhs.to_string().as_str()),
+                // string upcasts everything to string
+                (Value::String(lhs), Value::String(rhs)) => Value::from(lhs.clone() + rhs.as_str()),
+                (Value::String(lhs), rhs) => Value::from(lhs.clone() + rhs.to_string().as_str()),
+                (lhs, Value::String(rhs)) => {
+                    Value::from(lhs.to_string() + rhs.to_string().as_str())
+                }
 
                 // arrays concat with arrays and otherwise give error
-                (Value::Array(lhs), Value::Array(rhs)) => Value::from(lhs.iter().cloned().chain(rhs.iter().cloned()).collect::<Vec<Value>>()),
-                (Value::Array(_), _) | (_, Value::Array(_)) => anyhow::bail!("cannot add array with non-array"),
+                (Value::Array(lhs), Value::Array(rhs)) => Value::from(
+                    lhs.iter()
+                        .cloned()
+                        .chain(rhs.iter().cloned())
+                        .collect::<Vec<Value>>(),
+                ),
+                (Value::Array(_), _) | (_, Value::Array(_)) => {
+                    anyhow::bail!("cannot add array with non-array")
+                }
 
                 // objects fail to concat
                 (Value::Object(_), _) => {
                     anyhow::bail!("cannot add object with non-object");
-                },
+                }
 
                 // otherwise fail
                 _ => anyhow::bail!("unexpected value type for addition: {}", value),
@@ -70,17 +80,18 @@ mod tests {
         let add_map = AddMap {};
         let values: Vec<Value> = vec![Value::from("1"), Value::from("2")];
         let value = add_map.map(Ok(values));
-        assert_eq!(value.unwrap_err().to_string(), "expected array but recieved iterator");
-
+        assert_eq!(
+            value.unwrap_err().to_string(),
+            "expected array but recieved iterator"
+        );
     }
 
     #[test]
     fn test_add_integers() {
         let add_map = AddMap {};
-        let values: Vec<Value> = vec![Value::from(vec![1,2])];
+        let values: Vec<Value> = vec![Value::from(vec![1, 2])];
         let value = add_map.map(Ok(values));
         assert_eq!(value.unwrap()[0], 3);
-
     }
 
     #[test]
@@ -106,5 +117,4 @@ mod tests {
         let value = add_map.map(Ok(values));
         assert_eq!(value.unwrap()[0].to_string(), "[1,2,3,4]");
     }
-
 }

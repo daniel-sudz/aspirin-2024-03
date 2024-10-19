@@ -1,21 +1,21 @@
-use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
+use serde_json::Value;
 
-pub struct LengthMap {
-}
+pub struct LengthMap {}
 
 impl Map for LengthMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         let values = value?;
-        let values: Result<Vec<Value>> = values.iter().map(|v| {
-            match v {
+        let values: Result<Vec<Value>> = values
+            .iter()
+            .map(|v| match v {
                 Value::Array(arr) => Ok(Value::Number(arr.len().into())),
                 Value::Object(obj) => Ok(Value::Number(obj.len().into())),
                 Value::String(s) => Ok(Value::Number(s.len().into())),
                 _ => anyhow::bail!("cannot get length of value"),
-            }
-        }).collect();
+            })
+            .collect();
         values
     }
 
@@ -34,7 +34,9 @@ mod tests {
     #[test]
     fn test_basic_length() {
         let length_map = LengthMap {};
-        let values = length_map.map(Ok(vec![serde_json::from_str("[0,1,2]").unwrap()])).unwrap();
+        let values = length_map
+            .map(Ok(vec![serde_json::from_str("[0,1,2]").unwrap()]))
+            .unwrap();
         assert_eq!(values.len(), 1);
         assert_eq!(values[0], 3);
     }
@@ -55,12 +57,13 @@ mod tests {
         assert_eq!(values[2], 2);
     }
 
-
-    // replicates echo '"foobar"' | jq "length" 
+    // replicates echo '"foobar"' | jq "length"
     #[test]
     fn test_length_string() {
         let length_map = LengthMap {};
-        let values = length_map.map(Ok(vec![serde_json::from_str("\"foobar\"").unwrap()])).unwrap();
+        let values = length_map
+            .map(Ok(vec![serde_json::from_str("\"foobar\"").unwrap()]))
+            .unwrap();
         assert_eq!(values.len(), 1);
         assert_eq!(values[0], 6);
     }
@@ -69,7 +72,12 @@ mod tests {
     #[test]
     fn test_length_object() {
         let length_map = LengthMap {};
-        let values = length_map.map(Ok(vec![serde_json::from_str("{\"a\": 1, \"b\": 2, \"c\": 3}").unwrap()])).unwrap();
+        let values = length_map
+            .map(Ok(vec![serde_json::from_str(
+                "{\"a\": 1, \"b\": 2, \"c\": 3}",
+            )
+            .unwrap()]))
+            .unwrap();
         assert_eq!(values.len(), 1);
         assert_eq!(values[0], 3);
     }

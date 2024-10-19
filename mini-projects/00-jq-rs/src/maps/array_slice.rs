@@ -1,7 +1,7 @@
-use serde_json::Value;
 use crate::maps::maps::Map;
 use anyhow::Result;
 use regex::Regex;
+use serde_json::Value;
 pub struct ArraySliceMap {
     pub from: usize,
     pub to: usize,
@@ -13,44 +13,42 @@ impl Map for ArraySliceMap {
 
         // when testing against the official jq the array slice can work with both iterators and array indexing
         // for iterators it slices every element in the iterator
-        let result: Result<Vec<Value>> = value.iter().map(|v| {
-            match v {
+        let result: Result<Vec<Value>> = value
+            .iter()
+            .map(|v| match v {
                 Value::Array(array) => Ok(Value::Array(array[self.from..self.to].to_vec())),
                 Value::String(string) => Ok(Value::String(string[self.from..self.to].to_string())),
                 _ => anyhow::bail!("cannot index non-array value"),
-            }
-        }).collect();
+            })
+            .collect();
         result
     }
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
         let pattern = r"\.\[(\d+):(\d+)\]";
         let re: Regex = Regex::new(pattern).unwrap();
-    
+
         match re.captures(input) {
-            Some(captures) => {
-                match captures.get(0).unwrap().as_str() == input {
-                    true => {
-                        let first = captures.get(1).unwrap().as_str();
-                        let second = captures.get(2).unwrap().as_str();
-                        match (first.parse::<usize>(), second.parse::<usize>()) {
-                    (Ok(start), Ok(end)) => {
-                        return Ok(Box::new(ArraySliceMap {
-                            from: start,
-                            to: end,
+            Some(captures) => match captures.get(0).unwrap().as_str() == input {
+                true => {
+                    let first = captures.get(1).unwrap().as_str();
+                    let second = captures.get(2).unwrap().as_str();
+                    match (first.parse::<usize>(), second.parse::<usize>()) {
+                        (Ok(start), Ok(end)) => {
+                            return Ok(Box::new(ArraySliceMap {
+                                from: start,
+                                to: end,
                             }));
                         }
                         _ => anyhow::bail!("failed to parse array slice"),
                     }
-                    }
-                    false => anyhow::bail!("failed to parse array slice"),
                 }
+                false => anyhow::bail!("failed to parse array slice"),
             },
             None => anyhow::bail!("failed to parse array slice"),
         }
     }
 }
-
 
 mod tests {
     use super::*;
@@ -82,7 +80,7 @@ mod tests {
         let values: Vec<Value> = vec![
             Value::String("one".to_string()),
             Value::String("two".to_string()),
-            Value::String("three".to_string())
+            Value::String("three".to_string()),
         ];
         let values = array_slice_map.map(Ok(values)).unwrap();
         assert_eq!(values.len(), 3);
@@ -107,13 +105,15 @@ mod tests {
         assert_eq!(values[2].to_string(), "[7,8]");
     }
 
-
     // replicates echo '1' | jq ".[0:2]"
     #[test]
     fn test_basic_non_iterable_slice() {
         let array_slice_map = ArraySliceMap { from: 0, to: 2 };
         let values: Vec<Value> = vec![Value::Number(1.into())];
         let values = array_slice_map.map(Ok(values));
-        assert_eq!(values.err().unwrap().to_string(), "cannot index non-array value");
+        assert_eq!(
+            values.err().unwrap().to_string(),
+            "cannot index non-array value"
+        );
     }
 }
