@@ -1,8 +1,6 @@
 use crate::maps::map::Map;
 use anyhow::Result;
-use regex::Regex;
 use serde_json::Value;
-use std::cmp::min;
 
 pub struct ArrayIteratorMap {}
 
@@ -15,7 +13,7 @@ impl Map for ArrayIteratorMap {
                 let value = value[0].clone();
                 match value {
                     Value::Array(array) => {
-                        let value: Vec<Value> = array.iter().map(|v| v.clone()).collect();
+                        let value: Vec<Value> = array.iter().cloned().collect();
                         Ok(value)
                     }
                     _ => anyhow::bail!("cannot iterate over non-array value"),
