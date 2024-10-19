@@ -5,6 +5,6 @@ pub mod del_array;
 pub mod del_key;
 pub mod identity;
 pub mod length;
-mod maps;
-pub use maps::*;
+mod map;
+pub use map::*;
 pub mod object_identifier;

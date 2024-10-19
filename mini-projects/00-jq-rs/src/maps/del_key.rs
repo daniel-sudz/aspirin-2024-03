@@ -1,4 +1,4 @@
-use crate::maps::maps::Map;
+use crate::maps::map::Map;
 use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
