@@ -50,6 +50,7 @@ impl Map for ArraySliceMap {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

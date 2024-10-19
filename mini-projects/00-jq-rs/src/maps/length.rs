@@ -27,6 +27,7 @@ impl Map for LengthMap {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -44,6 +44,7 @@ impl Map for ArrayIndexMap {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

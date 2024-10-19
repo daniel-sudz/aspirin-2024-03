@@ -39,6 +39,7 @@ pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
     ops
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 }

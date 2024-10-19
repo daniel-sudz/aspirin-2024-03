@@ -34,6 +34,7 @@ pub fn process_from_string(args: &Args) -> Result<String> {
     output_to_string(result, &args)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::path::{absolute, Path};

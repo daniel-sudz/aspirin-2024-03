@@ -45,6 +45,7 @@ impl Map for DelMapArray {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

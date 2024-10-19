@@ -1,3 +1,4 @@
+#[cfg(test)]
 pub const ALL_TYPES: &str = r#"
         {
             "fizz": "buzz",
@@ -15,6 +16,7 @@ pub const ALL_TYPES: &str = r#"
         }
     "#;
 
+#[cfg(test)]
 pub const ARRAY: &str = r#"
     [
         "one",

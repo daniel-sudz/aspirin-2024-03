@@ -42,6 +42,7 @@ impl Map for DelMapKey {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

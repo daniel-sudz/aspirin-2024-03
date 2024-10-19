@@ -17,6 +17,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use anyhow::Result;

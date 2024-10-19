@@ -16,6 +16,7 @@ impl Map for IdentityMap {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -139,6 +139,7 @@ pub fn format(
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::samples::{ALL_TYPES, ARRAY};

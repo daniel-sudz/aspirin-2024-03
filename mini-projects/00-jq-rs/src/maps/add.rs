@@ -72,6 +72,7 @@ impl Map for AddMap {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
