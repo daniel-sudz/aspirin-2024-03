@@ -5,7 +5,7 @@ use crate::maps::del_array::DelMapArray;
 use crate::maps::del_key::DelMapKey;
 use crate::maps::identity::IdentityMap;
 use crate::maps::length::LengthMap;
-use crate::maps::maps::Map;
+use crate::maps::Map;
 use crate::maps::object_identifier::ObjectIdentifierMap;
 use anyhow::Result;
 
