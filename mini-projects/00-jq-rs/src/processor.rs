@@ -110,4 +110,19 @@ mod tests{
         let res = process_from_string(&args).unwrap();
         assert_eq!(res, r#"{"baz":null,"biz":42,"bizz":22.0,"fizz":"buzz","fuzz":true}"#);
     }
+
+    #[test]
+    fn test_del_array_slice_example() {
+        let args = Args {
+            sort_keys: true,
+            indent: None,
+            compact_output: true,
+            monochrome_output: true,
+            color_output: false,
+            command: ". | del(.[0:1])".to_string(),
+            file: Some(absolute(Path::new("sample_data/array.json")).unwrap()),
+        };
+        let res = process_from_string(&args).unwrap();
+        assert_eq!(res, r#"["two","three"]"#);
+    }
 }
