@@ -142,7 +142,7 @@ pub fn format(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::samples::{ALL_TYPES, ARRAY};
+    use crate::samples::ALL_TYPES;
 
     // MATCHES JQ_COLORS="::::::::" jq "." all_types.json
     #[test]

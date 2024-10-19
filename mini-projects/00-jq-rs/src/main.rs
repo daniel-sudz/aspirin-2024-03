@@ -17,10 +17,10 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use anyhow::Result;
     use std::{
-        path::{absolute, Path, PathBuf},
+        path::{absolute, Path},
         process::{Command, Stdio},
     };
 
