@@ -6,8 +6,6 @@ mod samples;
 use anyhow::Result;
 use args::Args;
 use clap::Parser;
-use serde_json::Value;
-use std::fs;
 pub mod maps;
 
 fn main() -> Result<()> {

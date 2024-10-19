@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::env;
 
 enum JqColorType {
@@ -62,7 +62,7 @@ pub fn format(
         Value::Array(a) => {
             let mut result: String = color_string("[", JqColorType::Array, disable_colors)?;
             if !compact {
-                result.push_str("\n");
+                result.push('\n');
                 result.push_str(&" ".repeat(cur_indent + indent));
             }
             for (i, e) in a.iter().enumerate() {
@@ -76,15 +76,15 @@ pub fn format(
                 )?;
                 result.push_str(&formatted_element);
                 if i < a.len() - 1 {
-                    result.push_str(",");
+                    result.push(',');
                     if !compact {
-                        result.push_str("\n");
+                        result.push('\n');
                         result.push_str(&" ".repeat(cur_indent + indent));
                     }
                 }
             }
             if !compact {
-                result.push_str("\n");
+                result.push('\n');
                 result.push_str(&" ".repeat(cur_indent));
             }
             result.push_str(&color_string("]", JqColorType::Array, disable_colors)?);
@@ -93,10 +93,10 @@ pub fn format(
         Value::Object(o) => {
             let mut result: String = color_string("{", JqColorType::Object, disable_colors)?;
             if !compact {
-                result.push_str("\n");
+                result.push('\n');
                 result.push_str(&" ".repeat(cur_indent + indent));
             }
-            let mut keys: Vec<String> = o.keys().into_iter().map(|k| k.to_string()).collect();
+            let mut keys: Vec<String> = o.keys().map(|k| k.to_string()).collect();
             match sort_keys {
                 true => keys.sort(),
                 false => (),
@@ -108,9 +108,9 @@ pub fn format(
                     JqColorType::ObjectKey,
                     disable_colors,
                 )?);
-                result.push_str(":");
+                result.push(':');
                 if !compact {
-                    result.push_str(" ");
+                    result.push(' ');
                 }
                 result.push_str(&format(
                     v,
@@ -122,7 +122,7 @@ pub fn format(
                 )?);
                 if i < &keys.len() - 1 {
                     if compact {
-                        result.push_str(",");
+                        result.push(',');
                     } else {
                         result.push_str(",\n");
                         result.push_str(&" ".repeat(cur_indent + indent));
@@ -130,7 +130,7 @@ pub fn format(
                 }
             }
             if !compact {
-                result.push_str("\n");
+                result.push('\n');
                 result.push_str(&" ".repeat(cur_indent));
             }
             result.push_str(&color_string("}", JqColorType::Object, disable_colors)?);

@@ -30,9 +30,9 @@ impl Map for ObjectIdentifierMap {
             Some(captures) => match captures.get(0).unwrap().as_str() == input {
                 true => {
                     let key = captures.get(1).unwrap().as_str();
-                    return Ok(Box::new(ObjectIdentifierMap {
+                    Ok(Box::new(ObjectIdentifierMap {
                         key: key.to_string(),
-                    }));
+                    }))
                 }
                 false => anyhow::bail!("failed to parse object identifier"),
             },

@@ -35,10 +35,10 @@ impl Map for ArraySliceMap {
                     let second = captures.get(2).unwrap().as_str();
                     match (first.parse::<usize>(), second.parse::<usize>()) {
                         (Ok(start), Ok(end)) => {
-                            return Ok(Box::new(ArraySliceMap {
+                            Ok(Box::new(ArraySliceMap {
                                 from: start,
                                 to: end,
-                            }));
+                            }))
                         }
                         _ => anyhow::bail!("failed to parse array slice"),
                     }

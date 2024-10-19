@@ -32,7 +32,7 @@ impl Map for ArrayIndexMap {
                     let index_str = captures.get(1).unwrap().as_str();
                     match index_str.parse::<usize>() {
                         Ok(index) => {
-                            return Ok(Box::new(ArrayIndexMap { index }));
+                            Ok(Box::new(ArrayIndexMap { index }))
                         }
                         Err(_) => anyhow::bail!("failed to parse array index"),
                     }

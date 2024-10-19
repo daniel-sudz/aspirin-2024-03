@@ -3,7 +3,6 @@ use crate::formatter::format;
 use crate::parser::parse;
 use anyhow::Result;
 use serde_json::Value;
-use std::fs;
 
 pub fn output_to_string(input: Result<Vec<Value>>, args: &Args) -> Result<String> {
     let input = input?;
@@ -31,7 +30,7 @@ pub fn process_from_string(args: &Args) -> Result<String> {
     for op in ops.iter() {
         result = Ok(op.map(result)?);
     }
-    output_to_string(result, &args)
+    output_to_string(result, args)
 }
 
 #[cfg(test)]
