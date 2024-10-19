@@ -10,12 +10,35 @@ pub struct ArraySliceMap {
 impl Map for ArraySliceMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
         let value = value?;
-        let result: Result<Vec<Value>> = value.iter().map(|v| {
-            let array = v.as_array().ok_or_else(|| anyhow::anyhow!("array iterator requires an array"))?;
-            let slice = array[self.from..self.to].to_vec();
-            Ok(Value::Array(slice))
-        }).collect();
-        result
+
+        // when testing against the official jq the array slice can work with both iterators and array indexing
+        // for iterators it slices every element in the iterator
+        match value.len() {
+            0 => return Ok(vec![]),
+            1 => {
+                match &value[0] {
+                    Value::Array(array) => {
+                        let slice = array[self.from..self.to].to_vec();
+                        return Ok(vec![Value::Array(slice)]);
+                    }
+                    Value::String(string) => {
+                        let slice = string[self.from..self.to].to_string();
+                        return Ok(vec![Value::String(slice)]);
+                    }
+                    _ => anyhow::bail!("cannot index non-array value"),
+                }
+            },
+            _ => {
+                let value: Result<Vec<Value>> = value.iter().map(|v| {
+                    match v {
+                        Value::Array(array) => Ok(Value::Array(array[self.from..self.to].to_vec())),
+                        Value::String(string) => Ok(Value::String(string[self.from..self.to].to_string())),
+                        _ => anyhow::bail!("cannot index non-array value"),
+                    }
+                }).collect();
+                value
+            }
+        }
     }
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
@@ -41,3 +64,69 @@ impl Map for ArraySliceMap {
     }
 }
 
+
+mod tests {
+    use super::*;
+
+    // replicates echo "[1,2,3]" | jq ".[0:2]"
+    #[test]
+    fn test_basic_array_slice() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 2 };
+        let values: Vec<Value> = vec![serde_json::from_str("[1,2,3]").unwrap()];
+        let values = array_slice_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "[1,2]");
+    }
+
+    // replicates echo '"foo"' | jq ".[0:2]"
+    #[test]
+    fn test_basic_string_slice() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 2 };
+        let values: Vec<Value> = vec![Value::String("foo".to_string())];
+        let values = array_slice_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "\"fo\"");
+    }
+
+    // replicates echo '["one", "two", "three"]' | jq ".[] | .[0:2]"
+    #[test]
+    fn test_iterator_array_slice_1() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 2 };
+        let values: Vec<Value> = vec![
+            Value::String("one".to_string()),
+            Value::String("two".to_string()),
+            Value::String("three".to_string())
+        ];
+        let values = array_slice_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 3);
+        assert_eq!(values[0].to_string(), "\"on\"");
+        assert_eq!(values[1].to_string(), "\"tw\"");
+        assert_eq!(values[2].to_string(), "\"th\"");
+    }
+
+    // replicates echo '[[1,2,3], [4,5,6], [7,8,9]]' | jq ".[] | .[0:2]"
+    #[test]
+    fn test_iterator_array_slice_2() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 2 };
+        let values: Vec<Value> = vec![
+            serde_json::from_str("[1,2,3]").unwrap(),
+            serde_json::from_str("[4,5,6]").unwrap(),
+            serde_json::from_str("[7,8,9]").unwrap(),
+        ];
+        let values = array_slice_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 3);
+        assert_eq!(values[0].to_string(), "[1,2]");
+        assert_eq!(values[1].to_string(), "[4,5]");
+        assert_eq!(values[2].to_string(), "[7,8]");
+    }
+
+    // replicates echo '1' | jq ".[0:2]"
+    #[test]
+    fn test_basic_non_iterable_slice() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 2 };
+        let values: Vec<Value> = vec![Value::Number(1.into())];
+        let values = array_slice_map.map(Ok(values));
+        assert!(values.is_err());
+        assert_eq!(values.err().unwrap().to_string(), "cannot index non-array value");
+    }
+}
