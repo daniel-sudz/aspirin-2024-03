@@ -1,14 +1,10 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use assert_cmd::prelude::*; // Add methods on commands
-    use predicates::prelude::*; // Used for writing assertions
+    use assert_cmd::prelude::*;
+    use predicates::prelude::*;
+    use std::path::{absolute, Path};
     use std::process::Command;
-    use std::{
-        env,
-        path::{absolute, Path},
-        process::Stdio,
-    };
 
     // test the cli binary directly with full integration
     fn test_from_sample_data(
