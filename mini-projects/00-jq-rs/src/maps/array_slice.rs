@@ -120,13 +120,13 @@ mod tests {
         assert_eq!(values[2].to_string(), "[7,8]");
     }
 
+
     // replicates echo '1' | jq ".[0:2]"
     #[test]
     fn test_basic_non_iterable_slice() {
         let array_slice_map = ArraySliceMap { from: 0, to: 2 };
         let values: Vec<Value> = vec![Value::Number(1.into())];
         let values = array_slice_map.map(Ok(values));
-        assert!(values.is_err());
         assert_eq!(values.err().unwrap().to_string(), "cannot index non-array value");
     }
 }

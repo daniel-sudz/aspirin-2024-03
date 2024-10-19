@@ -36,3 +36,32 @@ impl Map for ArrayIndexMap {
     }
 }
 
+mod tests {
+    use super::*;
+
+    // replicates echo "[1,2,3]" | jq ".[1]"
+    #[test]
+    fn test_basic_array_index() {
+        let array_index_map = ArrayIndexMap { index: 1 };
+        let values = array_index_map.map(Ok(vec![serde_json::from_str("[1,2,3]").unwrap()])).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "2");
+    }
+
+    // replicates echo "[[1,2,3],[4,5,6],[7,8,9]]" | jq ".[] | .[1]"
+    #[test]
+    fn test_iterator_array_index() {
+        let array_index_map = ArrayIndexMap { index: 1 };
+        let values: Vec<Value> = vec![
+            serde_json::from_str("[1,2,3]").unwrap(),
+            serde_json::from_str("[4,5,6]").unwrap(),
+            serde_json::from_str("[7,8,9]").unwrap(),
+        ];
+        let values = array_index_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 3);
+        assert_eq!(values[0].to_string(), "2");
+        assert_eq!(values[1].to_string(), "5");
+        assert_eq!(values[2].to_string(), "8");
+    }
+
+}   
