@@ -1,7 +1,7 @@
 use crate::maps::add::AddMap;
 use crate::maps::array_index::ArrayIndexMap;
-use crate::maps::array_slice::ArraySliceMap;
 use crate::maps::array_iterator::ArrayIteratorMap;
+use crate::maps::array_slice::ArraySliceMap;
 use crate::maps::del_array::DelMapArray;
 use crate::maps::del_key::DelMapKey;
 use crate::maps::identity::IdentityMap;

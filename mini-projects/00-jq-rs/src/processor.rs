@@ -143,8 +143,7 @@ mod tests {
             file: Some(absolute(Path::new("sample_data/football.json")).unwrap()),
         };
         let res = process_from_string(&args).unwrap();
-        let expected = 
-r#""Leo Lightning"
+        let expected = r#""Leo Lightning"
 "Maximus Defender"
 "Sophie Swift""#;
         assert_eq!(res, expected);

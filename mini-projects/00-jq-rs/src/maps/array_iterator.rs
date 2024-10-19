@@ -4,8 +4,7 @@ use regex::Regex;
 use serde_json::Value;
 use std::cmp::min;
 
-pub struct ArrayIteratorMap {
-}
+pub struct ArrayIteratorMap {}
 
 impl Map for ArrayIteratorMap {
     fn map(&self, value: Result<Vec<Value>>) -> Result<Vec<Value>> {
@@ -18,10 +17,10 @@ impl Map for ArrayIteratorMap {
                     Value::Array(array) => {
                         let value: Vec<Value> = array.iter().map(|v| v.clone()).collect();
                         Ok(value)
-                    },
+                    }
                     _ => anyhow::bail!("cannot iterate over non-array value"),
                 }
-            },
+            }
             _ => anyhow::bail!("cannot iterate over non-array value"),
         }
     }
@@ -53,6 +52,9 @@ mod tests {
     fn test_non_array_value() {
         let array_iterator_map = ArrayIteratorMap {};
         let values = array_iterator_map.map(Ok(vec![serde_json::from_str("1").unwrap()]));
-        assert_eq!(values.unwrap_err().to_string(), "cannot iterate over non-array value");
+        assert_eq!(
+            values.unwrap_err().to_string(),
+            "cannot iterate over non-array value"
+        );
     }
 }

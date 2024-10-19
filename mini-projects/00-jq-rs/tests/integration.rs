@@ -108,4 +108,14 @@ mod tests {
         let expected_stderr = r#"the argument '--compact-output' cannot be used with '--indent"#;
         test_from_sample_data("array.json", args, "", expected_stderr).unwrap();
     }
+
+    // matches jq ".[] | .name" sample_data/football.json --monochrome-output --compact-output
+    #[test]
+    fn test_array_iterator() {
+        let args: Vec<&str> = vec!["--monochrome-output", "--compact-output", ".[] | .name"];
+        let expected_stdout = r#""Leo Lightning"
+"Maximus Defender"
+"Sophie Swift""#;
+        test_from_sample_data("football.json", args, expected_stdout, "").unwrap();
+    }
 }
