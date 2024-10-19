@@ -13,9 +13,6 @@ impl Map for ObjectIdentifierMap {
             .iter()
             .map(|v| {
                 let new_value = v[&self.key].clone();
-                if new_value.is_null() {
-                    anyhow::bail!("object identifier not found")
-                }
                 Ok(new_value)
             })
             .collect();
@@ -38,5 +35,34 @@ impl Map for ObjectIdentifierMap {
             },
             None => anyhow::bail!("failed to parse object identifier"),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_basic_object_identifier() {
+        let object_identifier_map = ObjectIdentifierMap {
+            key: "foo".to_string(),
+        };
+        let values = object_identifier_map
+            .map(Ok(vec![serde_json::from_str(r#"{"foo": "bar"}"#).unwrap()]))
+            .unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), r#""bar""#);
+    }
+
+    #[test]
+    fn test_non_existent_object_identifier() {
+        let object_identifier_map = ObjectIdentifierMap {
+            key: "foobar".to_string(),
+        };
+        let values = object_identifier_map
+            .map(Ok(vec![serde_json::from_str(r#"{"foo": "bar"}"#).unwrap()]))
+            .unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), r#"null"#);
     }
 }
