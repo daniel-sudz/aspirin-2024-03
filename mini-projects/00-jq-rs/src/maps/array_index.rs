@@ -16,7 +16,10 @@ impl Map for ArrayIndexMap {
                 let array = v
                     .as_array()
                     .ok_or_else(|| anyhow::anyhow!("array iterator requires an array"))?;
-                Ok(array[self.index].clone())
+                match array.get(self.index) {
+                    Some(value) => Ok(value.clone()),
+                    None => Ok(Value::Null),
+                }
             })
             .collect();
         result
@@ -71,5 +74,15 @@ mod tests {
         assert_eq!(values[0].to_string(), "2");
         assert_eq!(values[1].to_string(), "5");
         assert_eq!(values[2].to_string(), "8");
+    }
+
+    // replicates echo "[1,2,3]" | jq ".[10]"
+    #[test]
+    fn test_invalid_array_index() {
+        let array_index_map = ArrayIndexMap { index: 10 };
+        let values = array_index_map
+            .map(Ok(vec![serde_json::from_str("[1,2,3]").unwrap()]))
+            .unwrap();
+        assert_eq!(values[0].to_string(), "null");
     }
 }
