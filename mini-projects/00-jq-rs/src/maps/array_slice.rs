@@ -2,6 +2,8 @@ use crate::maps::map::Map;
 use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
+use std::cmp::min;
+
 pub struct ArraySliceMap {
     pub from: usize,
     pub to: usize,
@@ -16,8 +18,12 @@ impl Map for ArraySliceMap {
         let result: Result<Vec<Value>> = value
             .iter()
             .map(|v| match v {
-                Value::Array(array) => Ok(Value::Array(array[self.from..self.to].to_vec())),
-                Value::String(string) => Ok(Value::String(string[self.from..self.to].to_string())),
+                Value::Array(array) => Ok(Value::Array(
+                    array[self.from..min(self.to, array.len())].to_vec(),
+                )),
+                Value::String(string) => Ok(Value::String(
+                    string[self.from..min(self.to, string.len())].to_string(),
+                )),
                 _ => anyhow::bail!("cannot index non-array value"),
             })
             .collect();
@@ -114,5 +120,15 @@ mod tests {
             values.err().unwrap().to_string(),
             "cannot index non-array value"
         );
+    }
+
+    // replicates echo '[1,2,3]' | jq '.[0:100]'
+    #[test]
+    fn test_out_of_bounds_upper() {
+        let array_slice_map = ArraySliceMap { from: 0, to: 100 };
+        let values: Vec<Value> = vec![serde_json::from_str("[1,2,3]").unwrap()];
+        let values = array_slice_map.map(Ok(values)).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "[1,2,3]");
     }
 }
