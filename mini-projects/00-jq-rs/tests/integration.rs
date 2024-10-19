@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_conflicting_args() {
+    fn test_conflicting_args_1() {
         let args: Vec<&str> = vec![
             "--monochrome-output",
             "--compact-output",
@@ -91,6 +91,21 @@ mod tests {
             ".",
         ];
         let expected_stderr = r#"the argument '--compact-output' cannot be used multiple times"#;
+        test_from_sample_data("array.json", args, "", expected_stderr).unwrap();
+    }
+
+    #[test]
+    fn test_conflicting_args_2() {
+        let args: Vec<&str> = vec!["--monochrome-output", "--color-output", "."];
+        let expected_stderr =
+            r#"the argument '--monochrome-output' cannot be used with '--color-output'"#;
+        test_from_sample_data("array.json", args, "", expected_stderr).unwrap();
+    }
+
+    #[test]
+    fn test_conflicting_args_3() {
+        let args: Vec<&str> = vec!["--compact-output", "--indent", "7", "."];
+        let expected_stderr = r#"the argument '--compact-output' cannot be used with '--indent"#;
         test_from_sample_data("array.json", args, "", expected_stderr).unwrap();
     }
 }
