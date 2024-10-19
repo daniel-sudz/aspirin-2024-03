@@ -20,7 +20,6 @@ mod tests {
         cmd.args(args).arg(input_string);
 
         cmd.assert()
-            .success()
             .stdout(predicate::str::contains(expected_stdout))
             .stderr(predicate::str::contains(expected_stderr));
 
@@ -81,5 +80,17 @@ mod tests {
         let expected_stdout = r#"["two","three"]
 "#;
         test_from_sample_data("array.json", args, expected_stdout, "").unwrap();
+    }
+
+    #[test]
+    fn test_conflicting_args() {
+        let args: Vec<&str> = vec![
+            "--monochrome-output",
+            "--compact-output",
+            "--compact-output",
+            ".",
+        ];
+        let expected_stderr = r#"the argument '--compact-output' cannot be used multiple times"#;
+        test_from_sample_data("array.json", args, "", expected_stderr).unwrap();
     }
 }
