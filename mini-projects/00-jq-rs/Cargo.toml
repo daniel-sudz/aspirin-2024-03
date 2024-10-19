@@ -8,3 +8,7 @@ anyhow = "1.0.89"
 clap = { version = "4.5.20", features = ["derive"] }
 regex = "1.11.0"
 serde_json = {version = "1.0", features = ["preserve_order"]}
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "2.1"
