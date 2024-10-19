@@ -7,4 +7,3 @@ pub trait Map {
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>>;
 }
 
-

@@ -29,16 +29,21 @@ impl Map for ArraySliceMap {
     
         match re.captures(input) {
             Some(captures) => {
-                let first = captures.get(1).unwrap().as_str();
-                let second = captures.get(2).unwrap().as_str();
-                match (first.parse::<usize>(), second.parse::<usize>()) {
+                match captures.get(0).unwrap().as_str() == input {
+                    true => {
+                        let first = captures.get(1).unwrap().as_str();
+                        let second = captures.get(2).unwrap().as_str();
+                        match (first.parse::<usize>(), second.parse::<usize>()) {
                     (Ok(start), Ok(end)) => {
                         return Ok(Box::new(ArraySliceMap {
                             from: start,
                             to: end,
-                        }));
+                            }));
+                        }
+                        _ => anyhow::bail!("failed to parse array slice"),
                     }
-                    _ => anyhow::bail!("failed to parse array slice"),
+                    }
+                    false => anyhow::bail!("failed to parse array slice"),
                 }
             },
             None => anyhow::bail!("failed to parse array slice"),

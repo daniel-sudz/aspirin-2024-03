@@ -29,13 +29,18 @@ impl Map for DelMapArray {
     
         match re.captures(input) {
             Some(captures) => {
-                let from = captures.get(1).unwrap().as_str();
-                let to = captures.get(2).unwrap().as_str();
-                Ok(Box::new(DelMapArray {
-                    from: from.parse().unwrap(),
-                    to: to.parse().unwrap(),
-                }))
-            }
+                match captures.get(0).unwrap().as_str() == input {
+                    true => {
+                        let from = captures.get(1).unwrap().as_str();
+                        let to = captures.get(2).unwrap().as_str();
+                        Ok(Box::new(DelMapArray {
+                            from: from.parse().unwrap(),
+                        to: to.parse().unwrap(),
+                    }))
+                    }
+                    false => anyhow::bail!("failed to parse del slice"),
+                }
+            },
             None => anyhow::bail!("failed to parse del slice"),
         }
     }

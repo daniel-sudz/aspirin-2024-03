@@ -28,12 +28,17 @@ impl Map for DelMapKey {
     
         match re.captures(input) {
             Some(captures) => {
-                let key = captures.get(1).unwrap().as_str();
-                Ok(Box::new(DelMapKey {
+                match captures.get(0).unwrap().as_str() == input {
+                    true => {
+                        let key = captures.get(1).unwrap().as_str();
+                        Ok(Box::new(DelMapKey {
                     key: key.to_string(),
                 }))
             }
-            None => anyhow::bail!("failed to parse del slice"),
+                    false => anyhow::bail!("failed to parse del key"),
+                }
+            },
+            None => anyhow::bail!("failed to parse del key"),
         }
     }
 }
@@ -59,4 +64,12 @@ mod tests {
         assert_eq!(values[0].to_string(), "{\"a\":1}");
     }
 
+    // replicates echo '{"a":1, "b": {"c": 2}}' | jq "del(.b)"
+    #[test]
+    fn test_del_nested_object() {
+        let del_map = DelMapKey { key: "b".to_string() };
+        let values = del_map.map(Ok(vec![serde_json::from_str("{\"a\":1, \"b\": {\"c\": 2}}").unwrap()])).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "{\"a\":1}");
+    }   
 }   

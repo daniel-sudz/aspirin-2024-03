@@ -12,14 +12,14 @@ use anyhow::Result;
 
 pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
     let maps: Vec<Box<dyn Map>> = vec![
-        Box::new(ObjectIdentifierMap { key: "".to_string() }),
-        Box::new(IdentityMap),
-        Box::new(AddMap {}),
         Box::new(DelMapKey { key: "".to_string() }),
         Box::new(DelMapArray { from: 0, to: 0 }),
-        Box::new(LengthMap {}),
         Box::new(ArraySliceMap { from: 0, to: 0 }),
         Box::new(ArrayIndexMap { index: 0 }),
+        Box::new(ObjectIdentifierMap { key: "".to_string() }),
+        Box::new(AddMap {}),
+        Box::new(LengthMap {}),
+        Box::new(IdentityMap),
     ];
     let ops: Result<Vec<Box<dyn Map>>> = input.split("|").map(|op| {
         for map in maps.iter() {

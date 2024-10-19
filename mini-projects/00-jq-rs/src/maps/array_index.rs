@@ -23,13 +23,19 @@ impl Map for ArrayIndexMap {
     
         match re.captures(input) {
             Some(captures) => {
-                let index_str = captures.get(1).unwrap().as_str();
+                match captures.get(0).unwrap().as_str() == input {
+                    true => {
+let index_str = captures.get(1).unwrap().as_str();
                 match index_str.parse::<usize>() {
                     Ok(index) => {
                         return Ok(Box::new(ArrayIndexMap { index }));
                     }
                     Err(_) => anyhow::bail!("failed to parse array index"),
                 }
+                    }
+                    false => anyhow::bail!("failed to parse array index"),
+                }
+                
             },
             None => anyhow::bail!("failed to match array index pattern"),
         }

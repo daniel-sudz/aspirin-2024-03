@@ -25,8 +25,13 @@ impl Map for ObjectIdentifierMap {
     
         match re.captures(input) {
             Some(captures) => {
-                let key = captures.get(1).unwrap().as_str();
-                return Ok(Box::new(ObjectIdentifierMap { key: key.to_string() }))
+                match captures.get(0).unwrap().as_str() == input {
+                    true => {
+                        let key = captures.get(1).unwrap().as_str();
+                        return Ok(Box::new(ObjectIdentifierMap { key: key.to_string() }))
+                    }
+                    false => anyhow::bail!("failed to parse object identifier"),
+                }
             },
             None => anyhow::bail!("failed to parse object identifier"),
         }
