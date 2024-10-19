@@ -1,6 +1,7 @@
 pub mod add;
 pub mod array_index;
 pub mod array_slice;
+pub mod array_iterator;
 pub mod del_array;
 pub mod del_key;
 pub mod identity;

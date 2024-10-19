@@ -1,6 +1,7 @@
 use crate::maps::add::AddMap;
 use crate::maps::array_index::ArrayIndexMap;
 use crate::maps::array_slice::ArraySliceMap;
+use crate::maps::array_iterator::ArrayIteratorMap;
 use crate::maps::del_array::DelMapArray;
 use crate::maps::del_key::DelMapKey;
 use crate::maps::identity::IdentityMap;
@@ -17,6 +18,7 @@ pub fn parse(input: String) -> Result<Vec<Box<dyn Map>>> {
         Box::new(DelMapArray { from: 0, to: 0 }),
         Box::new(ArraySliceMap { from: 0, to: 0 }),
         Box::new(ArrayIndexMap { index: 0 }),
+        Box::new(ArrayIteratorMap {}),
         Box::new(ObjectIdentifierMap {
             key: "".to_string(),
         }),

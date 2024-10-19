@@ -130,4 +130,23 @@ mod tests {
         let res = process_from_string(&args).unwrap();
         assert_eq!(res, r#"["two","three"]"#);
     }
+
+    #[test]
+    fn test_array_iterator_example() {
+        let args = Args {
+            sort_keys: true,
+            indent: None,
+            compact_output: true,
+            monochrome_output: true,
+            color_output: false,
+            command: ".[] | .name".to_string(),
+            file: Some(absolute(Path::new("sample_data/football.json")).unwrap()),
+        };
+        let res = process_from_string(&args).unwrap();
+        let expected = 
+r#""Leo Lightning"
+"Maximus Defender"
+"Sophie Swift""#;
+        assert_eq!(res, expected);
+    }
 }
