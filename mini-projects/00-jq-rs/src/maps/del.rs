@@ -28,3 +28,15 @@ impl Map for DelMap {
     }
 }
 
+mod tests {
+    use super::*;
+
+    // replicates echo '{"a":1,"b":2,"c":3}' | jq "del(.a)"
+    #[test]
+    fn test_basic_del() {
+        let del_map = DelMap { key: "a".to_string() };
+        let values = del_map.map(Ok(vec![serde_json::from_str("{\"a\":1,\"b\":2,\"c\":3}").unwrap()])).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].to_string(), "{\"b\":2,\"c\":3}");
+    }
+}   

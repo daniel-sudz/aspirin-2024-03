@@ -13,32 +13,14 @@ impl Map for ArraySliceMap {
 
         // when testing against the official jq the array slice can work with both iterators and array indexing
         // for iterators it slices every element in the iterator
-        match value.len() {
-            0 => return Ok(vec![]),
-            1 => {
-                match &value[0] {
-                    Value::Array(array) => {
-                        let slice = array[self.from..self.to].to_vec();
-                        return Ok(vec![Value::Array(slice)]);
-                    }
-                    Value::String(string) => {
-                        let slice = string[self.from..self.to].to_string();
-                        return Ok(vec![Value::String(slice)]);
-                    }
-                    _ => anyhow::bail!("cannot index non-array value"),
-                }
-            },
-            _ => {
-                let value: Result<Vec<Value>> = value.iter().map(|v| {
-                    match v {
-                        Value::Array(array) => Ok(Value::Array(array[self.from..self.to].to_vec())),
-                        Value::String(string) => Ok(Value::String(string[self.from..self.to].to_string())),
-                        _ => anyhow::bail!("cannot index non-array value"),
-                    }
-                }).collect();
-                value
+        let result: Result<Vec<Value>> = value.iter().map(|v| {
+            match v {
+                Value::Array(array) => Ok(Value::Array(array[self.from..self.to].to_vec())),
+                Value::String(string) => Ok(Value::String(string[self.from..self.to].to_string())),
+                _ => anyhow::bail!("cannot index non-array value"),
             }
-        }
+        }).collect();
+        result
     }
 
     fn command_match(&self, input: &str) -> Result<Box<dyn Map>> {
