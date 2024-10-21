@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+
+use std::vec;
+
 #[derive(Debug, PartialEq)]
 pub enum MatrixError {
     EmptyVector,
@@ -5,19 +9,62 @@ pub enum MatrixError {
     InvalidShape,
 }
 
+// use standard dot product sum multiply definition
+#[allow(clippy::ptr_arg)]
 fn dot_product_prescriptive(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, MatrixError> {
-    todo!()
+    if vec1.is_empty() || vec2.is_empty() {
+        return Err(MatrixError::EmptyVector);
+    }
+    if vec1.len() != vec2.len() {
+        return Err(MatrixError::DimensionMismatch);
+    }
+    let mut res: f64 = 0.0;
+    for i in 0..vec1.len() {
+        res += vec1[i] * vec2[i];
+    }
+    Ok(res)
 }
 
+// use standard dot product sum multiply definition
+#[allow(clippy::ptr_arg)]
 fn dot_product_functional(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Result<f64, MatrixError> {
-    todo!()
+    match (vec1.len(), vec2.len()) {
+        (0, _) | (_, 0) => Err(MatrixError::EmptyVector),
+        (a, b) if a != b => Err(MatrixError::DimensionMismatch),
+        _ => Ok(vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum()),
+    }
 }
 
+// use standard matrix multiplication definition
+#[allow(clippy::needless_range_loop)]
+#[allow(clippy::ptr_arg)]
 fn multiply_matrices(
     vec1: &Vec<Vec<f64>>,
     vec2: &Vec<Vec<f64>>,
 ) -> Result<Vec<Vec<f64>>, MatrixError> {
-    todo!()
+    // check dimension match cases
+    if !vec1.iter().all(|x| x.len() == vec1[0].len()) {
+        return Err(MatrixError::InvalidShape);
+    }
+    if !vec2.iter().all(|x| x.len() == vec2[0].len()) {
+        return Err(MatrixError::InvalidShape);
+    }
+    if vec1.is_empty() || vec2.is_empty() {
+        return Err(MatrixError::EmptyVector);
+    }
+    if vec1[0].len() != vec2.len() {
+        return Err(MatrixError::DimensionMismatch);
+    }
+    // apply standard matrix multiplication
+    let mut res = vec![vec![0.0; vec2[0].len()]; vec1.len()];
+    for c2 in 0..vec2[0].len() {
+        for r1 in 0..vec1.len() {
+            for c1 in 0..vec1[0].len() {
+                res[r1][c2] += vec1[r1][c1] * vec2[c1][c2];
+            }
+        }
+    }
+    Ok(res)
 }
 
 #[cfg(test)]
