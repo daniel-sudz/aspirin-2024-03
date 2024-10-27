@@ -48,7 +48,7 @@ impl TryFrom<Vec<String>> for HttpRequest {
             Some(captures) => {
                 let method = captures.get(1).unwrap().as_str().to_string();
                 let path = captures.get(2).unwrap().as_str().to_string();
-                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(lines[lines.len() - 1].clone()) })
+                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(lines[lines.len() -1].clone()) })
             }
             None => Err(anyhow::anyhow!("Invalid request")),
         }
