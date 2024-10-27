@@ -62,7 +62,12 @@ impl Display for HttpResponse {
 impl From<AspirinEatsError> for HttpResponse {
     /// Given an error type, convert it to an appropriate HTTP Response
     fn from(value: AspirinEatsError) -> Self {
-        todo!()
+        match value {
+            AspirinEatsError::InvalidRequest => HttpResponse::new(400, "Bad Request", "Invalid Request"),
+            AspirinEatsError::NotFound => HttpResponse::new(404, "Not Found", "Resource not found"),
+            AspirinEatsError::MethodNotAllowed => HttpResponse::new(405, "Method Not Allowed", "Method not allowed"),
+            _ => HttpResponse::new(500, "Internal Server Error", "Internal Server Error"),
+        }
     }
 }
 
