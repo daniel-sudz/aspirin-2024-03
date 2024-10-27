@@ -32,7 +32,7 @@ impl FromStr for HttpRequest {
                 let method = captures.get(1).unwrap().as_str().to_string();
                 let path = captures.get(2).unwrap().as_str().to_string();
                 let body = captures.get(3).unwrap().as_str().to_string();
-                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(body) })
+                Ok(HttpRequest { method, path, body })
             }
             None => Err("Invalid request".to_string()),
         }
@@ -87,6 +87,7 @@ impl From<AspirinEatsError> for HttpResponse {
             AspirinEatsError::InvalidRequest => HttpResponse::new(400, "Bad Request", "Invalid Request"),
             AspirinEatsError::NotFound => HttpResponse::new(404, "Not Found", "Resource not found"),
             AspirinEatsError::MethodNotAllowed => HttpResponse::new(405, "Method Not Allowed", "Method not allowed"),
+            AspirinEatsError::ParseError(_) => HttpResponse::new(400, "Bad Request", "Failed to parse request"),
             _ => HttpResponse::new(500, "Internal Server Error", "Internal Server Error"),
         }
     }

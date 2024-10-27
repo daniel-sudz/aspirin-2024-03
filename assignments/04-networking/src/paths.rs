@@ -1,4 +1,4 @@
-use crate::{db::AspirinEatsDb, error::AspirinEatsError, http::{HttpRequest, HttpResponse}};
+use crate::{db::AspirinEatsDb, error::AspirinEatsError, food::Order, http::{HttpRequest, HttpResponse}};
 use anyhow::Result;
 use serde_json::Value;
 use regex::Regex;
@@ -69,14 +69,26 @@ impl PathHandler for GetOrderWithIdPathHandler {
 pub struct CreateOrderPathHandler;
 
 impl PathHandler for CreateOrderPathHandler {
-    fn handle(&self, request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         println!("CreateOrderPathHandler");
-        
 
-        if let Some(body) = serde_json::from_str(&request.body.) else {
-            println!("Body: {:?}", body);
+        match serde_json::from_str::<Order>(&request.body) {
+            Ok(order) => {
+                match db.add_order(order) {
+                    Ok(order_id) => {
+                        println!("Order created with id {}", order_id);
+                        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+                    }
+                    Err(e) => {
+                        Ok(HttpResponse::from(AspirinEatsError::Database(e)))
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Error parsing order: {:?}", e);
+                Ok(HttpResponse::from(AspirinEatsError::ParseError(e)))
+            }
         }
-        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {

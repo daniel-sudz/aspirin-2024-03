@@ -45,30 +45,27 @@ fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpRe
         println!("Line: {:?}", line);
     }
 
-    let request = HttpRequest::try_from(lines)?;
+    let Ok(request) = HttpRequest::try_from(lines) else {
+        return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
+    };
 
-    match &request {
-        HttpRequest { method: Some(method), path: Some(path), body: Some(body) } => {
-            let path_handlers: Vec<Box<dyn PathHandler>> = vec![
-                Box::new(RootPathHandler {}),
-                Box::new(GetOrdersPathHandler {}),
-                Box::new(GetOrderWithIdPathHandler { id: 0 }),
-                Box::new(CreateOrderPathHandler {}),
-                Box::new(DeleteOrdersPathHandler {}),
-                Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
-            ];
-            for path_handler in path_handlers {
-                match path_handler.matches(&method, &path) {
-                    Ok(path_handler) => {
-                        return path_handler.handle(&request, db);
-                    }
-                    Err(_) => {}
-                }
+    let path_handlers: Vec<Box<dyn PathHandler>> = vec![
+        Box::new(RootPathHandler {}),
+        Box::new(GetOrdersPathHandler {}),
+        Box::new(GetOrderWithIdPathHandler { id: 0 }),
+        Box::new(CreateOrderPathHandler {}),
+        Box::new(DeleteOrdersPathHandler {}),
+        Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
+    ];
+    for path_handler in path_handlers {
+        match path_handler.matches(&request.method, &request.path) {
+            Ok(path_handler) => {
+                return path_handler.handle(&request, db);
             }
-            Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
+            Err(_) => {}
         }
-        _ => Ok(HttpResponse::from(AspirinEatsError::InvalidRequest)) 
     }
+    Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
 }
 
 fn main() -> Result<()> {
