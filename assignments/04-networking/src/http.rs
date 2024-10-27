@@ -1,5 +1,6 @@
 use std::{fmt::Display, str::FromStr};
 use regex::Regex;
+use anyhow::Result;
 
 use crate::error::AspirinEatsError;
 
@@ -32,6 +33,24 @@ impl FromStr for HttpRequest {
                 Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(body) })
             }
             None => Err("Invalid request".to_string()),
+        }
+    }
+}
+
+impl TryFrom<Vec<String>> for HttpRequest {
+    type Error = anyhow::Error;
+
+    fn try_from(lines: Vec<String>) -> Result<Self> {
+        let method_re = r"(\w+)\s+(\/[^\s]+)\s+HTTP\/\d\.\d.*";
+        let re = Regex::new(method_re).unwrap();
+
+        match re.captures(&lines[0]) {
+            Some(captures) => {
+                let method = captures.get(1).unwrap().as_str().to_string();
+                let path = captures.get(2).unwrap().as_str().to_string();
+                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(lines[lines.len() - 1].clone()) })
+            }
+            None => Err(anyhow::anyhow!("Invalid request")),
         }
     }
 }
