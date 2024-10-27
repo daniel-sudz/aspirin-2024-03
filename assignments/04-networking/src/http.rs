@@ -1,4 +1,5 @@
 use std::{fmt::Display, str::FromStr};
+use regex::Regex;
 
 use crate::error::AspirinEatsError;
 
@@ -20,7 +21,18 @@ impl FromStr for HttpRequest {
 
     // Parse a string into an HTTP Request
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+        let regex_match = r"(\w+)\s+\/([^\s]+)\s+HTTP\/\d\.\d\\r\\n(?:[^\r\n]+)\\r\\n\\r\\n(.*)";
+        let re = Regex::new(regex_match).unwrap();
+        let captures = re.captures(s);
+        match captures {
+            Some(captures) => {
+                let method = captures.get(1).unwrap().as_str().to_string();
+                let path = captures.get(2).unwrap().as_str().to_string();
+                let body = captures.get(3).unwrap().as_str().to_string();
+                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(body) })
+            }
+            None => Err("Invalid request".to_string()),
+        }
     }
 }
 
