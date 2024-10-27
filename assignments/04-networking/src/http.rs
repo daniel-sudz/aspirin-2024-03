@@ -8,13 +8,13 @@ use crate::error::AspirinEatsError;
 #[derive(Debug)]
 pub struct HttpRequest {
     /// The HTTP method used in the request (GET, POST, etc)
-    pub method: Option<String>,
+    pub method: String,
 
     /// The path requested by the client
-    pub path: Option<String>,
+    pub path: String,
 
     /// The body of the request
-    pub body: Option<String>,
+    pub body: String,
 }
 
 
@@ -50,7 +50,7 @@ impl TryFrom<Vec<String>> for HttpRequest {
             Some(captures) => {
                 let method = captures.get(1).unwrap().as_str().to_string();
                 let path = captures.get(2).unwrap().as_str().to_string();
-                Ok(HttpRequest { method: Some(method), path: Some(path), body: Some(lines[lines.len() -1].clone()) })
+                Ok(HttpRequest { method, path, body: lines[lines.len() -1].clone() })
             }
             None => Err(anyhow::anyhow!("Invalid request")),
         }
@@ -100,9 +100,9 @@ mod tests {
     fn test_http_request_from_str() {
         let request = "GET /orders HTTP/1.1\r\nHost: localhost:8080\r\n\r\nthis is the body.";
         let http_request = HttpRequest::from_str(request).unwrap();
-        assert_eq!(http_request.method, Some("GET".to_string()));
-        assert_eq!(http_request.path, Some("/orders".to_string()));
-        assert_eq!(http_request.body, Some("this is the body.".to_string()));
+        assert_eq!(http_request.method, "GET".to_string());
+        assert_eq!(http_request.path, "/orders".to_string());
+        assert_eq!(http_request.body, "this is the body.".to_string());
     }
 
     #[test]

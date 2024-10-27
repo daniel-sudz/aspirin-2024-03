@@ -1,5 +1,6 @@
 use crate::{db::AspirinEatsDb, error::AspirinEatsError, http::{HttpRequest, HttpResponse}};
 use anyhow::Result;
+use serde_json::Value;
 use regex::Regex;
 
 pub trait PathHandler {
@@ -68,7 +69,13 @@ impl PathHandler for GetOrderWithIdPathHandler {
 pub struct CreateOrderPathHandler;
 
 impl PathHandler for CreateOrderPathHandler {
-    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+        println!("CreateOrderPathHandler");
+        
+
+        if let Some(body) = serde_json::from_str(&request.body.) else {
+            println!("Body: {:?}", body);
+        }
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
