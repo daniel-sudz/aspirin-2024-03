@@ -1,6 +1,9 @@
 use aspirin_eats::http::HttpResponse;
 use aspirin_eats::{db::AspirinEatsDb, http::HttpRequest, error::AspirinEatsError};
 use aspirin_eats::tcp::read_http_packet_tcp_stream;
+use aspirin_eats::paths::{
+    CreateOrderPathHandler, DeleteOrderWithIdPathHandler, DeleteOrdersPathHandler, GetOrderWithIdPathHandler, GetOrdersPathHandler, PathHandler, RootPathHandler
+};
 use anyhow::Result;
 use regex::Regex;
 use std::{io::{Read, Write}, net::{TcpListener, TcpStream}};
@@ -33,31 +36,6 @@ fn get_db() -> Result<AspirinEatsDb> {
         }
     }
 }
-/* 
-fn handle_get_orders(db: &AspirinEatsDb) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(db.get_orders()?))
-}
-
-fn handle_get_order_with_id(db: &AspirinEatsDb, order_id: i32) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(db.get_order_with_id(order_id)?))
-}
-
-fn handle_post_order(db: &AspirinEatsDb, order: OrderRequest) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(db.add_order(order)?))
-}
-
-fn handle_delete_order(db: &AspirinEatsDb, order_id: i32) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(db.delete_order(order_id)?))
-}
-
-fn handle_delete_order_with_id(db: &AspirinEatsDb, order_id: i32) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(db.delete_order_with_id(order_id)?))
-}
-
-fn handle_root_path(db: &AspirinEatsDb) -> Result<HttpResponse> {
-    Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
-}
-*/
 
 fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
@@ -68,6 +46,24 @@ fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpRe
     }
 
     let request = HttpRequest::try_from(lines)?;
+
+    let path_handlers: Vec<Box<dyn PathHandler>> = vec![
+        Box::new(RootPathHandler {}),
+        Box::new(GetOrdersPathHandler {}),
+        Box::new(GetOrderWithIdPathHandler { id: 0 }),
+        Box::new(CreateOrderPathHandler {}),
+        Box::new(DeleteOrdersPathHandler {}),
+        Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
+    ];
+
+    for path_handler in path_handlers {
+        match path_handler.matches(&request.method, &request.path) {
+            Ok(path_handler) => {
+                return path_handler.handle(db);
+            }
+            Err(_) => {}
+        }
+    }
 
     match request.path {
         Some(method) => {

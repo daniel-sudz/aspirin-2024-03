@@ -2,13 +2,13 @@ use crate::{db::AspirinEatsDb, http::HttpResponse, error::AspirinEatsError};
 use anyhow::Result;
 use regex::Regex;
 
-trait PathHandler {
+pub trait PathHandler {
     fn handle(&self, db: &AspirinEatsDb) -> Result<HttpResponse>;
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>>;
 }
 
 // path "/" returns a welcome message
-struct RootPathHandler;
+pub struct RootPathHandler;
 
 impl PathHandler for RootPathHandler {
     fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
@@ -25,7 +25,7 @@ impl PathHandler for RootPathHandler {
 }
 
 // path "/orders" returns all orders
-struct GetOrdersPathHandler;
+pub struct GetOrdersPathHandler;
 
 impl PathHandler for GetOrdersPathHandler {
     fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
@@ -42,7 +42,7 @@ impl PathHandler for GetOrdersPathHandler {
 }
 
 // path "/orders/{id}" returns an order with the given id
-struct GetOrderWithIdPathHandler {
+pub struct GetOrderWithIdPathHandler {
     pub id: i32,
 }
 
@@ -65,7 +65,7 @@ impl PathHandler for GetOrderWithIdPathHandler {
 
 
 // path "/orders" with POST method creates a new order
-struct CreateOrderPathHandler;
+pub struct CreateOrderPathHandler;
 
 impl PathHandler for CreateOrderPathHandler {
     fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
@@ -82,7 +82,7 @@ impl PathHandler for CreateOrderPathHandler {
 }
 
 // path "/orders" with DELETE methods deletes all orders
-struct DeleteOrdersPathHandler;
+pub struct DeleteOrdersPathHandler;
 
 impl PathHandler for DeleteOrdersPathHandler {
     fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
@@ -100,7 +100,7 @@ impl PathHandler for DeleteOrdersPathHandler {
 
 
 // path "/orders/{id}" with DELETE method deletes an order with the given id
-struct DeleteOrderWithIdPathHandler {
+pub struct DeleteOrderWithIdPathHandler {
     pub id: i32,
 }
 
