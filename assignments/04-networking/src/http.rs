@@ -55,7 +55,7 @@ impl HttpResponse {
 impl Display for HttpResponse {
     /// Convert an HttpResponse struct to a valid HTTP Response
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        write!(f, "HTTP/1.1 {} {}\r\n\r\n{}", self.status_code, self.status_text, self.body)
     }
 }
 
