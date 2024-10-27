@@ -21,7 +21,7 @@ impl FromStr for HttpRequest {
 
     // Parse a string into an HTTP Request
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex_match = r"(\w+)\s+\/([^\s]+)\s+HTTP\/\d\.\d\\r\\n(?:[^\r\n]+)\\r\\n\\r\\n(.*)";
+        let regex_match = r"(\w+)\s+(\/[^\s]+)\s+HTTP\/\d\.\d(?:\r\n|\r|\n)(?:[^\r\n]+)(?:\r\n|\r|\n)(?:\r\n|\r|\n)(.*)";
         let re = Regex::new(regex_match).unwrap();
         let captures = re.captures(s);
         match captures {
