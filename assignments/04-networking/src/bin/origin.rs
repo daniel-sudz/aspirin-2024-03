@@ -1,5 +1,12 @@
 use aspirin_eats::db::AspirinEatsDb;
+use aspirin_eats::tcp::read_http_packet_tcp_stream;
 use anyhow::Result;
+use std::{io::{Read, Write}, net::{TcpListener, TcpStream}};
+
+
+const DB_FILE_NAME: &str = "aspirin_eats.db";
+const BIND_ADDRESS: &str = "127.0.0.1:8080";
+
 
 // gets the db root path from the environment variable DB_ROOT_PATH or the cargo manifest directory
 fn get_db_path() -> Result<String> {
@@ -8,7 +15,7 @@ fn get_db_path() -> Result<String> {
         Ok(format!("{}/db", manifest_dir))
     });
     let db_root_path = db_root_path?;
-    Ok(format!("{}/aspirin_eats.db", db_root_path))
+    Ok(format!("{}/{}", db_root_path, DB_FILE_NAME))
 }
 
 // gets the db from the db path 
@@ -25,7 +32,22 @@ fn get_db() -> Result<AspirinEatsDb> {
     }
 }
 
+fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<()> {
+    println!("Handling connection");
+
+    let lines = read_http_packet_tcp_stream(&mut stream)?;
+    for line in lines {
+        println!("Line: {:?}", line);
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let db = get_db()?;
+    let listener = TcpListener::bind(BIND_ADDRESS)?;
+    for stream in listener.incoming() {
+        let stream = stream?;
+        handle_connection(stream, &db)?;
+    }
     Ok(())
 }
