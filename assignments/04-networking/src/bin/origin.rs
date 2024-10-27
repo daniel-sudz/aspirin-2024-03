@@ -47,52 +47,27 @@ fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpRe
 
     let request = HttpRequest::try_from(lines)?;
 
-    let path_handlers: Vec<Box<dyn PathHandler>> = vec![
-        Box::new(RootPathHandler {}),
-        Box::new(GetOrdersPathHandler {}),
-        Box::new(GetOrderWithIdPathHandler { id: 0 }),
-        Box::new(CreateOrderPathHandler {}),
-        Box::new(DeleteOrdersPathHandler {}),
-        Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
-    ];
-
-    for path_handler in path_handlers {
-        match path_handler.matches(&request.method, &request.path) {
-            Ok(path_handler) => {
-                return path_handler.handle(db);
-            }
-            Err(_) => {}
-        }
-    }
-
-    match request.path {
-        Some(method) => {
-            println!("Method: {:?}", method);
-            match method.as_str() {
-                "/orders" => {
-                    Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
-                }
-                "/" => {
-                    Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
-                },
-                m if 
-
-                false => {
-                    let re = Regex::new(r"\/orders/(\d+)")?;
-                    match re.captures(&method) {
-                        Some(captures) => {
-                            let order_id = captures.get(1).unwrap().as_str().parse::<i32>()?;
-
-                            Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
-                        }
-                        None => Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
+    match &request {
+        HttpRequest { method: Some(method), path: Some(path), body: Some(body) } => {
+            let path_handlers: Vec<Box<dyn PathHandler>> = vec![
+                Box::new(RootPathHandler {}),
+                Box::new(GetOrdersPathHandler {}),
+                Box::new(GetOrderWithIdPathHandler { id: 0 }),
+                Box::new(CreateOrderPathHandler {}),
+                Box::new(DeleteOrdersPathHandler {}),
+                Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
+            ];
+            for path_handler in path_handlers {
+                match path_handler.matches(&method, &path) {
+                    Ok(path_handler) => {
+                        return path_handler.handle(&request, db);
                     }
+                    Err(_) => {}
                 }
             }
-        }
-        None => {
             Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
         }
+        _ => Ok(HttpResponse::from(AspirinEatsError::InvalidRequest)) 
     }
 }
 

@@ -1,9 +1,9 @@
-use crate::{db::AspirinEatsDb, http::HttpResponse, error::AspirinEatsError};
+use crate::{db::AspirinEatsDb, error::AspirinEatsError, http::{HttpRequest, HttpResponse}};
 use anyhow::Result;
 use regex::Regex;
 
 pub trait PathHandler {
-    fn handle(&self, db: &AspirinEatsDb) -> Result<HttpResponse>;
+    fn handle(&self, request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse>;
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>>;
 }
 
@@ -11,7 +11,7 @@ pub trait PathHandler {
 pub struct RootPathHandler;
 
 impl PathHandler for RootPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
@@ -28,7 +28,7 @@ impl PathHandler for RootPathHandler {
 pub struct GetOrdersPathHandler;
 
 impl PathHandler for GetOrdersPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
@@ -47,7 +47,7 @@ pub struct GetOrderWithIdPathHandler {
 }
 
 impl PathHandler for GetOrderWithIdPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
@@ -68,7 +68,7 @@ impl PathHandler for GetOrderWithIdPathHandler {
 pub struct CreateOrderPathHandler;
 
 impl PathHandler for CreateOrderPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
@@ -85,7 +85,7 @@ impl PathHandler for CreateOrderPathHandler {
 pub struct DeleteOrdersPathHandler;
 
 impl PathHandler for DeleteOrdersPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
@@ -105,7 +105,7 @@ pub struct DeleteOrderWithIdPathHandler {
 }
 
 impl PathHandler for DeleteOrderWithIdPathHandler {
-    fn handle(&self, _db: &AspirinEatsDb) -> Result<HttpResponse> {
+    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
     }
 
