@@ -72,10 +72,15 @@ fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpRe
     match request.path {
         Some(method) => {
             println!("Method: {:?}", method);
-            match method == "/orders" {
-                true => {
+            match method.as_str() {
+                "/orders" => {
                     Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
                 }
+                "/" => {
+                    Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
+                },
+                m if 
+
                 false => {
                     let re = Regex::new(r"\/orders/(\d+)")?;
                     match re.captures(&method) {

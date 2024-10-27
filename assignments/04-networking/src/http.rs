@@ -17,6 +17,8 @@ pub struct HttpRequest {
     pub body: Option<String>,
 }
 
+
+
 impl FromStr for HttpRequest {
     type Err = String;
 
@@ -56,9 +58,9 @@ impl TryFrom<Vec<String>> for HttpRequest {
 }
 
 pub struct HttpResponse {
-    status_code: u16,
-    status_text: String,
-    body: String,
+    pub status_code: u16,
+    pub status_text: String,
+    pub body: String,
 }
 
 impl HttpResponse {

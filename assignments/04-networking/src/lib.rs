@@ -3,3 +3,4 @@ pub mod error;
 pub mod food;
 pub mod http;
 pub mod tcp;
+pub mod paths;
