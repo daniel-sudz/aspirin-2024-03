@@ -1,18 +1,20 @@
-use aspirin_eats::http::HttpResponse;
-use aspirin_eats::{db::AspirinEatsDb, http::HttpRequest, error::AspirinEatsError};
-use aspirin_eats::tcp::read_http_packet_tcp_stream;
-use aspirin_eats::paths::{
-    CreateOrderPathHandler, DeleteOrderWithIdPathHandler, DeleteOrdersPathHandler, GetOrderWithIdPathHandler, GetOrdersPathHandler, PathHandler, RootPathHandler
-};
 use anyhow::Result;
+use aspirin_eats::http::HttpResponse;
+use aspirin_eats::paths::{
+    CreateOrderPathHandler, DeleteOrderWithIdPathHandler, DeleteOrdersPathHandler,
+    GetOrderWithIdPathHandler, GetOrdersPathHandler, PathHandler, RootPathHandler,
+};
+use aspirin_eats::tcp::read_http_packet_tcp_stream;
+use aspirin_eats::{db::AspirinEatsDb, error::AspirinEatsError, http::HttpRequest};
 use regex::Regex;
 use std::time::Duration;
-use std::{io::{Read, Write}, net::{TcpListener, TcpStream}};
-
+use std::{
+    io::{Read, Write},
+    net::{TcpListener, TcpStream},
+};
 
 const DB_FILE_NAME: &str = "aspirin_eats.db";
 const BIND_ADDRESS: &str = "127.0.0.1:8080";
-
 
 // gets the db root path from the environment variable DB_ROOT_PATH or the cargo manifest directory
 fn get_db_path() -> Result<String> {
@@ -24,7 +26,7 @@ fn get_db_path() -> Result<String> {
     Ok(format!("{}/{}", db_root_path, DB_FILE_NAME))
 }
 
-// gets the db from the db path 
+// gets the db from the db path
 // if in test mode then returns a new in memory db
 fn get_db() -> Result<AspirinEatsDb> {
     match cfg!(test) {
@@ -39,10 +41,11 @@ fn get_db() -> Result<AspirinEatsDb> {
 }
 
 fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
-    let resp: HttpResponse = create_response(stream, db).unwrap_or_else(|_| {
-        HttpResponse::from(AspirinEatsError::InternalServerError)
-    });
-    stream.write(resp.to_string().as_bytes()).map_err(|e| AspirinEatsError::Io(e))?;
+    let resp: HttpResponse = create_response(stream, db)
+        .unwrap_or_else(|_| HttpResponse::from(AspirinEatsError::InternalServerError));
+    stream
+        .write(resp.to_string().as_bytes())
+        .map_err(|e| AspirinEatsError::Io(e))?;
     println!("[Origin] Terminated connection sucessfully");
     Ok(())
 }
@@ -95,17 +98,18 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aspirin_eats::food::{Bun, Burger, MenuItem, OrderRequest, Patty, Topping};
     use std::thread;
     use std::time::Duration;
-    use aspirin_eats::food::{OrderRequest, MenuItem, Burger, Bun, Patty, Topping};
 
     use serial_test::serial;
-
 
     fn send_request(request: &str) -> String {
         let mut stream = TcpStream::connect(BIND_ADDRESS).unwrap();
         stream.write_all(request.as_bytes()).unwrap();
-        let response = read_http_packet_tcp_stream(&mut stream).unwrap().join("\n\n");
+        let response = read_http_packet_tcp_stream(&mut stream)
+            .unwrap()
+            .join("\n\n");
         println!("Response: {:?}", response);
         response
     }
@@ -132,24 +136,24 @@ mod tests {
     #[serial]
     fn test_create_and_get_order() {
         start_server();
-        
+
         // Create an order
         let order = OrderRequest {
             customer: "Test Customer 🍔".to_string(),
             food: vec![MenuItem::Burger(Burger {
                 bun: Bun::Sesame,
                 patty: Patty::Beef,
-                toppings: vec![Topping::Lettuce]
-            })]
+                toppings: vec![Topping::Lettuce],
+            })],
         };
-        
+
         let order_json = serde_json::to_string::<OrderRequest>(&order).unwrap();
         let create_request = format!(
             "POST /orders HTTP/1.1\r\nContent-Length: {}\r\n\r\n{}",
             order_json.len(),
             order_json
         );
-        
+
         let response = send_request(&create_request);
         assert!(response.contains("200 OK"));
 

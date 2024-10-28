@@ -1,6 +1,6 @@
-use std::{fmt::Display, str::FromStr};
-use regex::Regex;
 use anyhow::Result;
+use regex::Regex;
+use std::{fmt::Display, str::FromStr};
 
 use crate::error::AspirinEatsError;
 
@@ -16,8 +16,6 @@ pub struct HttpRequest {
     /// The body of the request
     pub body: String,
 }
-
-
 
 impl FromStr for HttpRequest {
     type Err = String;
@@ -50,7 +48,11 @@ impl TryFrom<Vec<String>> for HttpRequest {
             Some(captures) => {
                 let method = captures.get(1).unwrap().as_str().to_string();
                 let path = captures.get(2).unwrap().as_str().to_string();
-                Ok(HttpRequest { method, path, body: lines[lines.len() -1].clone() })
+                Ok(HttpRequest {
+                    method,
+                    path,
+                    body: lines[lines.len() - 1].clone(),
+                })
             }
             None => Err(anyhow::anyhow!("Invalid request")),
         }
@@ -90,10 +92,16 @@ impl From<AspirinEatsError> for HttpResponse {
     /// Given an error type, convert it to an appropriate HTTP Response
     fn from(value: AspirinEatsError) -> Self {
         match value {
-            AspirinEatsError::InvalidRequest => HttpResponse::new(400, "Bad Request", "Invalid Request"),
+            AspirinEatsError::InvalidRequest => {
+                HttpResponse::new(400, "Bad Request", "Invalid Request")
+            }
             AspirinEatsError::NotFound => HttpResponse::new(404, "Not Found", "Resource not found"),
-            AspirinEatsError::MethodNotAllowed => HttpResponse::new(405, "Method Not Allowed", "Method not allowed"),
-            AspirinEatsError::ParseError(_) => HttpResponse::new(400, "Bad Request", "Failed to parse request"),
+            AspirinEatsError::MethodNotAllowed => {
+                HttpResponse::new(405, "Method Not Allowed", "Method not allowed")
+            }
+            AspirinEatsError::ParseError(_) => {
+                HttpResponse::new(400, "Bad Request", "Failed to parse request")
+            }
             _ => HttpResponse::new(500, "Internal Server Error", "Internal Server Error"),
         }
     }

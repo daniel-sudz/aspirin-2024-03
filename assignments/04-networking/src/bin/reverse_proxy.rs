@@ -1,6 +1,12 @@
-use std::{env, io::Write, net::{TcpListener, TcpStream}, process::{Child, Command}, time::Duration};
 use anyhow::Result;
 use aspirin_eats::{error::AspirinEatsError, http::HttpResponse, tcp::read_http_packet_tcp_stream};
+use std::{
+    env,
+    io::Write,
+    net::{TcpListener, TcpStream},
+    process::{Child, Command},
+    time::Duration,
+};
 
 /// Handles an incoming connection from a client by:
 /// 1. Connecting to the origin server
@@ -19,14 +25,18 @@ fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
         Err(e) => {
             let response = HttpResponse::from(AspirinEatsError::InvalidRequest);
             let _ = stream.write(response.to_string().as_bytes());
-            return Err(AspirinEatsError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())).into());
+            return Err(AspirinEatsError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))
+            .into());
         }
     };
     // send request to origin
     origin_stream.write(request.join("\n").as_bytes())?;
     // read response from origin
     let response = read_http_packet_tcp_stream(&mut origin_stream)?;
-    // send response to client 
+    // send response to client
     stream.write(response.join("\n").as_bytes())?;
     println!("[Reverse Proxy] Terminated connection sucessfully");
     Ok(())
@@ -98,7 +108,14 @@ mod tests {
 
             // Start reverse proxy on port 8001, forwarding to origin
             let proxy = Command::new("cargo")
-                .args(["run", "--bin", "proxy", "--", "127.0.0.1:8081", "127.0.0.1:8080"])
+                .args([
+                    "run",
+                    "--bin",
+                    "proxy",
+                    "--",
+                    "127.0.0.1:8081",
+                    "127.0.0.1:8080",
+                ])
                 .spawn()?;
 
             // Give servers time to start up
@@ -182,7 +199,11 @@ mod tests {
         // Test adding an order
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
         let order = r#"{"customer":"Test Customer 🍔","food":[{"Burger":{"bun":"Sesame","patty":"Beef","toppings":["Lettuce"]}}]}"#;
-        let request = format!("POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}", order.len(), order);
+        let request = format!(
+            "POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}",
+            order.len(),
+            order
+        );
         stream.write(request.as_bytes())?;
         let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
         assert!(response.contains("200 OK"));
@@ -215,7 +236,11 @@ mod tests {
         // Add another order and test delete all
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
         stream.write(request.as_bytes())?;
-        let request = format!("POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}", order.len(), order);
+        let request = format!(
+            "POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}",
+            order.len(),
+            order
+        );
         stream.write(request.as_bytes())?;
 
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
