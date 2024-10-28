@@ -53,6 +53,8 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use super::*;
     use std::thread;
     use std::time::Duration;
@@ -89,6 +91,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_proxy_forwards_requests() -> Result<()> {
         let _server = TestServer::new()?;
 
