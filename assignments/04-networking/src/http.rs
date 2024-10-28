@@ -118,7 +118,7 @@ mod tests {
         let response = HttpResponse::new(200, "OK", "Welcome to Aspirin Eats!");
         assert_eq!(
             response.to_string(),
-            "HTTP/1.1 200 OK\r\n\r\nWelcome to Aspirin Eats!"
+            "HTTP/1.1 200 OK\r\nContent-Length: 24\r\n\r\nWelcome to Aspirin Eats!"
         );
     }
 
