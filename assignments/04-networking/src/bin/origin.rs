@@ -42,21 +42,16 @@ fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
         HttpResponse::from(AspirinEatsError::InternalServerError)
     });
     stream.write(resp.to_string().as_bytes()).map_err(|e| AspirinEatsError::Io(e))?;
+    println!("[Origin] Terminated connection sucessfully");
     Ok(())
 }
 
 fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
-
     let lines = read_http_packet_tcp_stream(&mut stream)?;
-    for line in lines.clone() {
-        println!("Line: {:?}", line);
-    }
-
     let Ok(request) = HttpRequest::try_from(lines) else {
         return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
     };
-
     let path_handlers: Vec<Box<dyn PathHandler>> = vec![
         Box::new(RootPathHandler {}),
         Box::new(GetOrdersPathHandler {}),

@@ -33,14 +33,10 @@ pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>
                     }
                     None => {}
                 }
-                match line == "\r\n" || line == "\n" {
-                    true => {
-                        body_reading_started = true;
-                    }
-                    false => {
-                        lines.push(line.trim().to_string());
-                    }
+                if line == "\r\n" || line == "\n" {
+                    body_reading_started = true;
                 }
+                lines.push(line.trim().to_string());
             }
         }
     }

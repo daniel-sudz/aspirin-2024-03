@@ -43,7 +43,6 @@ impl TryFrom<Vec<String>> for HttpRequest {
     type Error = anyhow::Error;
 
     fn try_from(lines: Vec<String>) -> Result<Self> {
-        println!("Lines: {:?}", lines);
         let method_re = r"(\w+)\s+(\/[^\s]*)\s+HTTP\/\d\.\d.*";
         let re = Regex::new(method_re).unwrap();
 

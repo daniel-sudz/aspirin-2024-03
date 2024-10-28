@@ -14,6 +14,7 @@ fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
     let response = read_http_packet_tcp_stream(&mut origin_stream)?;
     // send response to client 
     stream.write(response.join("\n").as_bytes())?;
+    println!("[Reverse Proxy] Terminated connection sucessfully");
     Ok(())
 }
 
