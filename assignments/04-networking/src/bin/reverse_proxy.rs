@@ -103,12 +103,13 @@ mod tests {
         fn new() -> Result<Self> {
             // Start origin server on port 8000
             let origin = Command::new("cargo")
-                .args(["run", "--bin", "origin"])
+                .args(["-q", "run", "--bin", "origin"])
                 .spawn()?;
 
             // Start reverse proxy on port 8001, forwarding to origin
             let proxy = Command::new("cargo")
                 .args([
+                    "-q",
                     "run",
                     "--bin",
                     "proxy",
