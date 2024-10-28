@@ -135,7 +135,7 @@ mod tests {
         
         // Create an order
         let order = OrderRequest {
-            customer: "Test Customer".to_string(),
+            customer: "Test Customer 🍔".to_string(),
             food: vec![MenuItem::Burger(Burger {
                 bun: Bun::Sesame,
                 patty: Patty::Beef,
