@@ -62,8 +62,12 @@ impl PathHandler for GetOrderWithIdPathHandler {
         let re = Regex::new(r"/orders/(\d+)")?;
         match (method, re.captures(path)) {   
             ("GET", Some(captures)) => {
-                let id: i32 = captures[1].parse()?;
-                Ok(Box::new(GetOrderWithIdPathHandler { id }))
+                if &captures[0] == path {
+                    let id: i32 = captures[1].parse()?;
+                    Ok(Box::new(GetOrderWithIdPathHandler { id }))
+                } else {
+                    Err(anyhow::anyhow!("failed to match"))
+                }
             }
             _ => Err(anyhow::anyhow!("failed to match"))
         }
@@ -144,8 +148,12 @@ impl PathHandler for DeleteOrderWithIdPathHandler {
         let re = Regex::new(r"/orders/(\d+)")?;
         match (method, re.captures(path)) {
             ("DELETE", Some(captures)) => {
-                let id: i32 = captures[1].parse()?;
-                Ok(Box::new(DeleteOrderWithIdPathHandler { id }))
+                if &captures[0] == path {
+                    let id: i32 = captures[1].parse()?;
+                    Ok(Box::new(DeleteOrderWithIdPathHandler { id }))
+                } else {
+                    Err(anyhow::anyhow!("failed to match"))
+                }
             }
             _ => Err(anyhow::anyhow!("failed to match"))
         }
@@ -247,6 +255,7 @@ mod tests {
         assert!(handler.matches("DELETE", "/orders").is_err());
         assert!(handler.matches("GET", "/").is_err());
         assert!(handler.matches("GET", "/orders/1").is_err());
+        assert!(handler.matches("GET", "/orders/01/022121").is_err());
     }
 
     #[test]
@@ -255,6 +264,7 @@ mod tests {
         assert!(handler.matches("GET", "/orders/1").is_ok());
         assert!(handler.matches("GET", "/orders").is_err());
         assert!(handler.matches("GET", "/orders/abc").is_err());
+        assert!(handler.matches("GET", "/orders/01/022121").is_err());
     }
 
     #[test]
@@ -264,6 +274,7 @@ mod tests {
         assert!(handler.matches("DELETE", "/orders").is_err());
         assert!(handler.matches("GET", "/orders/1").is_err());
         assert!(handler.matches("DELETE", "/orders/abc").is_err());
+        assert!(handler.matches("DELETE", "/orders/01/022121").is_err());
     }
     #[test]
     fn test_path_matches_delete_orders() {
