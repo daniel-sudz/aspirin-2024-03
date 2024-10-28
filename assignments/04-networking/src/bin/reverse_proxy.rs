@@ -181,7 +181,7 @@ mod tests {
 
         // Test adding an order
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
-        let order = r#"{"customer":"Test Customer","food":[{"Burger":{"bun":"Sesame","patty":"Beef","toppings":["Lettuce"]}}]}"#;
+        let order = r#"{"customer":"Test Customer 🍔","food":[{"Burger":{"bun":"Sesame","patty":"Beef","toppings":["Lettuce"]}}]}"#;
         let request = format!("POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}", order.len(), order);
         stream.write(request.as_bytes())?;
         let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
@@ -194,7 +194,7 @@ mod tests {
         stream.write(request.as_bytes())?;
         let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
         assert!(response.contains("200 OK"));
-        assert!(response.contains("Test Customer"));
+        assert!(response.contains("Test Customer 🍔"));
 
         // Test getting all orders
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
@@ -202,7 +202,7 @@ mod tests {
         stream.write(request.as_bytes())?;
         let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
         assert!(response.contains("200 OK"));
-        assert!(response.contains("Test Customer"));
+        assert!(response.contains("Test Customer 🍔"));
 
         // Test deleting specific order
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
