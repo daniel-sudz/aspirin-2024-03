@@ -12,7 +12,8 @@ pub struct RootPathHandler;
 
 impl PathHandler for RootPathHandler {
     fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
-        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+        println!("RootPathHandler");
+        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "Welcome to Aspirin Eats!".to_string() })
     }
 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {

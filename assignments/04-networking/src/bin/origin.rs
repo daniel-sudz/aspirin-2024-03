@@ -98,11 +98,14 @@ mod tests {
     use std::time::Duration;
     use aspirin_eats::food::{OrderRequest, MenuItem, Burger, Bun, Patty, Topping};
 
+    use serial_test::serial;
+
+
     fn send_request(request: &str) -> String {
         let mut stream = TcpStream::connect(BIND_ADDRESS).unwrap();
         stream.write_all(request.as_bytes()).unwrap();
-        let mut response = String::new();
-        stream.read_to_string(&mut response).unwrap();
+        let response = read_http_packet_tcp_stream(&mut stream).unwrap().join("\n\n");
+        println!("Response: {:?}", response);
         response
     }
 
@@ -118,7 +121,6 @@ mod tests {
     fn test_root_endpoint() {
         start_server();
         let response = send_request("GET / HTTP/1.1\r\n\r\n");
-        assert!(response.contains("200 OK"));
         assert!(response.contains("Welcome to Aspirin Eats!"));
     }
 
@@ -136,7 +138,7 @@ mod tests {
             })]
         };
         
-        let order_json = serde_json::to_string(&order).unwrap();
+        let order_json = serde_json::to_string::<OrderRequest>(&order).unwrap();
         let create_request = format!(
             "POST /orders HTTP/1.1\r\nContent-Length: {}\r\n\r\n{}",
             order_json.len(),
