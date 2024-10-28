@@ -16,7 +16,7 @@ pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>
 
     loop {
         let mut raw_buffer = vec![0u8; 65536];
-        let mut line = String::new();
+        let line: String;
         match body_reading_started {
             true => {
                 stream.read_exact(&mut raw_buffer[..content_length])?;
