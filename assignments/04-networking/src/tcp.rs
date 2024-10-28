@@ -70,7 +70,8 @@ mod tests {
         
         assert_eq!(lines[0], "POST /orders HTTP/1.1");
         assert_eq!(lines[1], "Content-Length: 13");
-        assert_eq!(lines[2], "Hello, World!");
+        assert_eq!(lines[2], "");
+        assert_eq!(lines[3], "Hello, World!");
     }
 
     #[test]
@@ -89,6 +90,7 @@ mod tests {
         let lines = read_http_packet_tcp_stream(&mut client).unwrap();
         assert_eq!(lines[0], "GET / HTTP/1.1");
         assert_eq!(lines[1], "");
-        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[2], "");
+        assert_eq!(lines.len(), 3);
     }
 }
