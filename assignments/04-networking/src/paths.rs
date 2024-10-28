@@ -1,6 +1,5 @@
 use crate::{db::AspirinEatsDb, error::AspirinEatsError, food::{Order, OrderRequest}, http::{HttpRequest, HttpResponse}};
 use anyhow::Result;
-use serde_json::Value;
 use regex::Regex;
 
 pub trait PathHandler {
@@ -51,8 +50,11 @@ pub struct GetOrderWithIdPathHandler {
 }
 
 impl PathHandler for GetOrderWithIdPathHandler {
-    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
-        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+    fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
+        match db.get_order(self.id.into()) {
+            Ok(order) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: serde_json::to_string(&order)? }),
+            Err(e) => Ok(HttpResponse::from(AspirinEatsError::Database(e)))
+        }
     }
 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
@@ -107,8 +109,11 @@ impl PathHandler for CreateOrderPathHandler {
 pub struct DeleteOrdersPathHandler;
 
 impl PathHandler for DeleteOrdersPathHandler {
-    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
-        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+    fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
+        match db.reset_orders() {
+            Ok(_) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "reset all orders".to_string() }),
+            Err(e) => Ok(HttpResponse::from(AspirinEatsError::Database(e)))
+        }
     }
 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
@@ -127,8 +132,11 @@ pub struct DeleteOrderWithIdPathHandler {
 }
 
 impl PathHandler for DeleteOrderWithIdPathHandler {
-    fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
-        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+    fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
+        match db.remove_order(self.id.into()) {
+            Ok(_) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: format!("deleted order with id {}\n", self.id) }),
+            Err(e) => Ok(HttpResponse::from(AspirinEatsError::Database(e)))
+        }
     }
 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
@@ -141,4 +149,86 @@ impl PathHandler for DeleteOrderWithIdPathHandler {
             _ => Err(anyhow::anyhow!("failed to match"))
         }
     }
+}
+
+
+mod tests {
+    use crate::food::{Bun, Burger, MenuItem, Patty, Topping};
+
+    use super::*;
+
+    fn order_req_one() -> OrderRequest {
+        OrderRequest {
+            customer: String::from("John Doe"),
+            food: vec![MenuItem::Burger(Burger {
+            bun: Bun::Sesame,
+            patty: Patty::Beef,
+                toppings: vec![Topping::Lettuce, Topping::Tomato]
+            })],
+        }
+    }
+
+    #[test]
+    fn test_all_path_handler() {
+        let db = AspirinEatsDb::in_memory().unwrap();
+        let handler = GetOrdersPathHandler;
+        let request = HttpRequest {
+            method: "GET".to_string(),
+            path: "/orders".to_string(),
+            body: "".to_string(),
+        };
+        let response = handler.handle(&request, &db).unwrap();
+        assert_eq!(response.status_text, "OK");
+        assert_eq!(response.status_code, 200);
+        assert_eq!(response.body, "[]");
+
+        // add 100 orders and check that the response is correct
+        for i in 1..100 {
+            db.add_order(order_req_one().into()).unwrap();
+            let response = handler.handle(&request, &db).unwrap();
+            assert_eq!(response.status_text, "OK");
+            assert_eq!(response.status_code, 200);
+            assert_eq!(response.body, serde_json::to_string(&db.get_all_orders().unwrap()).unwrap());
+
+            let handler_specific = GetOrderWithIdPathHandler { id: i };
+            let response_specific = handler_specific.handle(&request, &db).unwrap();
+            assert_eq!(response_specific.status_text, "OK");
+            assert_eq!(response_specific.status_code, 200);
+            assert_eq!(response_specific.body, serde_json::to_string(&db.get_order(i.into()).unwrap()).unwrap());
+        }
+
+        // delete all orders and check that the response is correct
+        let delete_handler = DeleteOrdersPathHandler;
+        let response_delete = delete_handler.handle(&request, &db).unwrap();
+        assert_eq!(response_delete.status_text, "OK");
+        assert_eq!(response_delete.status_code, 200);
+        assert_eq!(response_delete.body, "reset all orders");
+        assert_eq!(db.get_all_orders().unwrap().len(), 0);
+
+        // add the 100 orders back and check that the response is correct
+        for i in 1..101 {
+            db.add_order(order_req_one().into()).unwrap();
+            let response = handler.handle(&request, &db).unwrap();
+            assert_eq!(response.status_text, "OK");
+            assert_eq!(response.status_code, 200);
+            assert_eq!(response.body, serde_json::to_string(&db.get_all_orders().unwrap()).unwrap());
+
+            let handler_specific = GetOrderWithIdPathHandler { id: i };
+            let response_specific = handler_specific.handle(&request, &db).unwrap();
+            assert_eq!(response_specific.status_text, "OK");
+            assert_eq!(response_specific.status_code, 200);
+            assert_eq!(response_specific.body, serde_json::to_string(&db.get_order(i.into()).unwrap()).unwrap());
+        }
+
+        // delete the orders one by one and check that the response is correct
+        for i in 1..101 {
+            let delete_handler_specific = DeleteOrderWithIdPathHandler { id: i };
+            let response_delete_specific = delete_handler_specific.handle(&request, &db).unwrap();
+            assert_eq!(response_delete_specific.status_text, "OK");
+            assert_eq!(response_delete_specific.status_code, 200);
+            assert_eq!(response_delete_specific.body, format!("deleted order with id {}\n", i));
+            assert_eq!(db.get_all_orders().unwrap().len(), 100 - i as usize);
+        }
+    }
+
 }

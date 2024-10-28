@@ -75,9 +75,9 @@ impl MenuItem {
 /// Struct that represents a burger
 #[derive(Serialize, Deserialize, DisplayAsJson, Debug, PartialEq, Clone)]
 pub struct Burger {
-    bun: Bun,
-    patty: Patty,
-    toppings: Vec<Topping>,
+    pub bun: Bun,
+    pub patty: Patty,
+    pub toppings: Vec<Topping>,
 }
 
 impl Burger {
