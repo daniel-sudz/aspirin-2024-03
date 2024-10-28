@@ -3,7 +3,10 @@ use anyhow::Result;
 use regex::Regex;
 
 pub trait PathHandler {
+    /// Handles an HTTP request by processing it and returning an HTTP response
     fn handle(&self, request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse>;
+    
+    /// Checks if this handler matches the given HTTP method and path
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>>;
 }
 
@@ -11,11 +14,13 @@ pub trait PathHandler {
 pub struct RootPathHandler;
 
 impl PathHandler for RootPathHandler {
+    /// Handles requests to the root path by returning a welcome message
     fn handle(&self, _request: &HttpRequest, _db: &AspirinEatsDb) -> Result<HttpResponse> {
         println!("RootPathHandler");
         Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "Welcome to Aspirin Eats!".to_string() })
     }
 
+    /// Matches GET requests to the root path "/"
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         if method == "GET" && path == "/" {
             Ok(Box::new(RootPathHandler))
@@ -29,6 +34,7 @@ impl PathHandler for RootPathHandler {
 pub struct GetOrdersPathHandler;
 
 impl PathHandler for GetOrdersPathHandler {
+    /// Handles requests to get all orders by returning the full order list
     fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         match db.get_all_orders() {
             Ok(orders) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: serde_json::to_string(&orders)? }),
@@ -36,6 +42,7 @@ impl PathHandler for GetOrdersPathHandler {
         }
     }
 
+    /// Matches GET requests to the "/orders" path
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         if method == "GET" && path == "/orders" {
             Ok(Box::new(GetOrdersPathHandler))
@@ -51,6 +58,7 @@ pub struct GetOrderWithIdPathHandler {
 }
 
 impl PathHandler for GetOrderWithIdPathHandler {
+    /// Handles requests to get a specific order by ID
     fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         match db.get_order(self.id.into()) {
             Ok(order) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: serde_json::to_string(&order)? }),
@@ -58,6 +66,7 @@ impl PathHandler for GetOrderWithIdPathHandler {
         }
     }
 
+    /// Matches GET requests to paths like "/orders/123" 
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         let re = Regex::new(r"/orders/(\d+)")?;
         match (method, re.captures(path)) {   
@@ -79,6 +88,7 @@ impl PathHandler for GetOrderWithIdPathHandler {
 pub struct CreateOrderPathHandler;
 
 impl PathHandler for CreateOrderPathHandler {
+    /// Handles requests to create a new order by parsing the request body and adding it to the database
     fn handle(&self, request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         println!("CreateOrderPathHandler");
 
@@ -101,6 +111,7 @@ impl PathHandler for CreateOrderPathHandler {
         }
     }
 
+    /// Matches POST requests to the "/orders" path
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         if method == "POST" && path == "/orders" {
             Ok(Box::new(CreateOrderPathHandler))
@@ -114,6 +125,7 @@ impl PathHandler for CreateOrderPathHandler {
 pub struct DeleteOrdersPathHandler;
 
 impl PathHandler for DeleteOrdersPathHandler {
+    /// Handles requests to delete all orders by resetting the orders database
     fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         match db.reset_orders() {
             Ok(_) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "reset all orders".to_string() }),
@@ -121,6 +133,7 @@ impl PathHandler for DeleteOrdersPathHandler {
         }
     }
 
+    /// Matches DELETE requests to the "/orders" path
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         if method == "DELETE" && path == "/orders" {
             Ok(Box::new(DeleteOrdersPathHandler))
@@ -137,6 +150,7 @@ pub struct DeleteOrderWithIdPathHandler {
 }
 
 impl PathHandler for DeleteOrderWithIdPathHandler {
+    /// Handles requests to delete a specific order by ID
     fn handle(&self, _request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         match db.remove_order(self.id.into()) {
             Ok(_) => Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: format!("deleted order with id {}\n", self.id) }),
@@ -144,6 +158,7 @@ impl PathHandler for DeleteOrderWithIdPathHandler {
         }
     }
 
+    /// Matches DELETE requests to paths like "/orders/123"
     fn matches(&self, method: &str, path: &str) -> Result<Box<dyn PathHandler>> {
         let re = Regex::new(r"/orders/(\d+)")?;
         match (method, re.captures(path)) {
@@ -166,6 +181,7 @@ mod tests {
 
     use super::*;
 
+    /// Creates a sample order request for testing
     fn order_req_one() -> OrderRequest {
         OrderRequest {
             customer: String::from("John Doe"),
@@ -177,6 +193,7 @@ mod tests {
         }
     }
 
+    /// Tests the GetOrdersPathHandler functionality with multiple orders
     #[test]
     fn test_all_path_handler() {
         let db = AspirinEatsDb::in_memory().unwrap();
@@ -240,6 +257,7 @@ mod tests {
         }
     }
 
+    /// Tests path matching for the root endpoint
     #[test]
     fn test_path_matches_root() {
         let handler = RootPathHandler;
@@ -247,6 +265,7 @@ mod tests {
         assert!(handler.matches("GET", "/orders").is_err());
     }
 
+    /// Tests path matching for the orders endpoint
     #[test]
     fn test_path_matches_orders() {
         let handler = GetOrdersPathHandler;
@@ -258,6 +277,7 @@ mod tests {
         assert!(handler.matches("GET", "/orders/01/022121").is_err());
     }
 
+    /// Tests path matching for specific order endpoints
     #[test]
     fn test_path_matches_order_with_id() {
         let handler = GetOrderWithIdPathHandler { id: 1 };
@@ -267,6 +287,7 @@ mod tests {
         assert!(handler.matches("GET", "/orders/01/022121").is_err());
     }
 
+    /// Tests path matching for deleting specific orders
     #[test]
     fn test_path_matches_delete_order_with_id() {
         let handler = DeleteOrderWithIdPathHandler { id: 1 };
@@ -276,6 +297,8 @@ mod tests {
         assert!(handler.matches("DELETE", "/orders/abc").is_err());
         assert!(handler.matches("DELETE", "/orders/01/022121").is_err());
     }
+
+    /// Tests path matching for deleting all orders
     #[test]
     fn test_path_matches_delete_orders() {
         let handler = DeleteOrdersPathHandler;

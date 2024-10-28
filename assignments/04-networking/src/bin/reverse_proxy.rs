@@ -2,6 +2,12 @@ use std::{env, io::Write, net::{TcpListener, TcpStream}, process::{Command, Chil
 use anyhow::Result;
 use aspirin_eats::{error::AspirinEatsError, tcp::read_http_packet_tcp_stream};
 
+/// Handles an incoming connection from a client by:
+/// 1. Connecting to the origin server
+/// 2. Reading the client's request
+/// 3. Forwarding the request to the origin
+/// 4. Reading the origin's response
+/// 5. Forwarding the response back to the client
 fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
     let mut origin_stream = TcpStream::connect(origin_addr)?;
     // read client request to proxy
@@ -18,6 +24,9 @@ fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
     Ok(())
 }
 
+/// Main entry point for the reverse proxy server.
+/// Takes command line arguments for proxy address and origin address.
+/// Starts a TCP listener and forwards connections to the origin server.
 fn main() -> Result<()> {
     let args = env::args().collect::<Vec<String>>();
     if args.len() < 3 {
@@ -65,6 +74,10 @@ mod tests {
     }
 
     impl TestServer {
+        /// Creates a new test server environment by:
+        /// 1. Starting an origin server on port 8000
+        /// 2. Starting a reverse proxy on port 8001 that forwards to the origin
+        /// 3. Waiting for both servers to start up
         fn new() -> Result<Self> {
             // Start origin server on port 8000
             let origin = Command::new("cargo")
@@ -84,11 +97,15 @@ mod tests {
     }
 
     impl Drop for TestServer {
+        /// Cleans up the test server by killing both the origin and proxy processes
         fn drop(&mut self) {
             self.origin.kill().unwrap();
             self.proxy.kill().unwrap();
         }
     }
+
+    /// Tests that the proxy correctly forwards basic GET requests to the origin
+    /// and returns responses back to the client
     #[test]
     #[serial]
     fn test_proxy_forwards_requests() -> Result<()> {
@@ -112,6 +129,14 @@ mod tests {
         Ok(())
     }
 
+    /// Tests a complex flow of HTTP requests through the proxy including:
+    /// - GET requests to root endpoint
+    /// - DELETE requests to clear orders
+    /// - GET requests to verify empty orders
+    /// - POST requests to create orders
+    /// - GET requests to verify order creation
+    /// - DELETE requests to remove specific orders
+    /// - Error handling for invalid requests
     #[test]
     #[serial]
     fn test_proxy_complex_flow() -> Result<()> {

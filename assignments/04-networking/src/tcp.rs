@@ -2,8 +2,8 @@ use anyhow::Result;
 use regex::Regex;
 use std::{io::{BufRead, BufReader, Read, Write}, net::{TcpListener, TcpStream}};
 
-// we assume that http packets contain content length and don't use chunked transfer encoding
-// since http1.1 packets don't have termination chars we use the content length to determine when to stop reading
+/// Reads an HTTP packet from a TCP stream by parsing headers and body based on Content-Length
+/// Returns a vector of strings containing the lines of the HTTP packet
 pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>> {
     println!("Reading HTTP packet from TCP stream");
     let mut lines: Vec<String> = Vec::new();
@@ -49,6 +49,7 @@ mod tests {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
+    /// Tests reading an HTTP packet with a Content-Length header and body
     #[test]
     fn test_read_http_packet() {
         // Start a TCP server in a separate thread
@@ -74,6 +75,7 @@ mod tests {
         assert_eq!(lines[3], "Hello, World!");
     }
 
+    /// Tests reading an HTTP packet without a Content-Length header
     #[test]
     fn test_read_http_packet_no_content_length() {
         thread::spawn(|| {
