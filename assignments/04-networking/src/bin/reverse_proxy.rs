@@ -66,12 +66,12 @@ mod tests {
         fn new() -> Result<Self> {
             // Start origin server on port 8000
             let origin = Command::new("cargo")
-                .args(["run", "--bin", "server", "--", "127.0.0.1:8000"])
+                .args(["run", "--bin", "origin"])
                 .spawn()?;
 
             // Start reverse proxy on port 8001, forwarding to origin
             let proxy = Command::new("cargo")
-                .args(["run", "--bin", "reverse_proxy", "--", "127.0.0.1:8001", "127.0.0.1:8000"])
+                .args(["run", "--bin", "proxy", "--", "127.0.0.1:8081", "127.0.0.1:8080"])
                 .spawn()?;
 
             // Give servers time to start up
@@ -93,7 +93,7 @@ mod tests {
         let _server = TestServer::new()?;
 
         // Connect to proxy
-        let mut stream = TcpStream::connect("127.0.0.1:8001")?;
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
 
         // Send GET request
         let request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
