@@ -222,4 +222,20 @@ mod tests {
 
         Ok(())
     }
+
+    /// Tests that the proxy correctly handles malformed HTTP requests
+    #[test]
+    #[serial]
+    fn test_invalid_http() -> Result<()> {
+        let server = TestServer::new()?;
+
+        // Test malformed HTTP request with no newline ending
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "GET /orders HTTP/1.1 Host: localhost"; // No final \r\n\r\n
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("400 Bad Request"));
+
+        Ok(())
+    }
 }
