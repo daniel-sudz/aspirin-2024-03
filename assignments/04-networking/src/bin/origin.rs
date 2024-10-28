@@ -110,14 +110,17 @@ mod tests {
     }
 
     fn start_server() {
+        // add some timeout for prior teardown
+        thread::sleep(Duration::from_millis(100));
         thread::spawn(|| {
-            main().unwrap();
+            let _ = main();
         });
         // Give the server time to start
         thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
+    #[serial]
     fn test_root_endpoint() {
         start_server();
         let response = send_request("GET / HTTP/1.1\r\n\r\n");
@@ -125,6 +128,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_create_and_get_order() {
         start_server();
         
@@ -155,6 +159,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_invalid_request() {
         start_server();
         let response = send_request("INVALID REQUEST\r\n\r\n");
