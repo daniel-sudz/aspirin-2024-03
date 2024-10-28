@@ -6,6 +6,7 @@ use aspirin_eats::paths::{
 };
 use anyhow::Result;
 use regex::Regex;
+use std::time::Duration;
 use std::{io::{Read, Write}, net::{TcpListener, TcpStream}};
 
 
@@ -74,9 +75,12 @@ fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<Htt
 fn main() -> Result<()> {
     let db = get_db()?;
     let listener = TcpListener::bind(BIND_ADDRESS)?;
+    // TcpListener doesn't have timeout methods, need to set them on individual streams
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
+                stream.set_read_timeout(Some(Duration::from_millis(1000)))?;
+                stream.set_write_timeout(Some(Duration::from_millis(1000)))?;
                 let _ = handle_connection(&mut stream, &db);
             }
             // stream can be dropped by the client

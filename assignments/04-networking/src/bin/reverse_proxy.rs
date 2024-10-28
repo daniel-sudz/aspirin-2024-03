@@ -1,6 +1,6 @@
-use std::{env, io::Write, net::{TcpListener, TcpStream}, process::{Command, Child}};
+use std::{env, io::Write, net::{TcpListener, TcpStream}, process::{Child, Command}, time::Duration};
 use anyhow::Result;
-use aspirin_eats::{error::AspirinEatsError, tcp::read_http_packet_tcp_stream};
+use aspirin_eats::{error::AspirinEatsError, http::HttpResponse, tcp::read_http_packet_tcp_stream};
 
 /// Handles an incoming connection from a client by:
 /// 1. Connecting to the origin server
@@ -10,10 +10,18 @@ use aspirin_eats::{error::AspirinEatsError, tcp::read_http_packet_tcp_stream};
 /// 5. Forwarding the response back to the client
 fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
     let mut origin_stream = TcpStream::connect(origin_addr)?;
+    origin_stream.set_read_timeout(Some(Duration::from_millis(1000)))?;
+    origin_stream.set_write_timeout(Some(Duration::from_millis(1000)))?;
+
     // read client request to proxy
-    let request = read_http_packet_tcp_stream(stream).map_err(|e| {
-        AspirinEatsError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
-    })?;
+    let request = match read_http_packet_tcp_stream(stream) {
+        Ok(req) => req,
+        Err(e) => {
+            let response = HttpResponse::from(AspirinEatsError::InvalidRequest);
+            let _ = stream.write(response.to_string().as_bytes());
+            return Err(AspirinEatsError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())).into());
+        }
+    };
     // send request to origin
     origin_stream.write(request.join("\n").as_bytes())?;
     // read response from origin
@@ -44,6 +52,10 @@ fn main() -> Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
+                // set timeouts for the stream
+                stream.set_read_timeout(Some(Duration::from_millis(1000)))?;
+                stream.set_write_timeout(Some(Duration::from_millis(1000)))?;
+
                 // client can drop while handling which is fine
                 let res = handle_connection(&mut stream, origin_addr);
                 match res {
@@ -234,6 +246,7 @@ mod tests {
         let request = "GET /orders HTTP/1.1 Host: localhost"; // No final \r\n\r\n
         stream.write(request.as_bytes())?;
         let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        println!("response: {}", response);
         assert!(response.contains("400 Bad Request"));
 
         Ok(())

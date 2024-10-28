@@ -7,7 +7,6 @@ use std::{io::{BufRead, BufReader, Read, Write}, net::{TcpListener, TcpStream}};
 pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>> {
     println!("Reading HTTP packet from TCP stream");
     let mut lines: Vec<String> = Vec::new();
-    let mut reader = BufReader::new(stream);
 
     let content_length_pattern = r"Content-Length:\s+(\d+)\s+";
     let content_length_regex = Regex::new(content_length_pattern)?;
@@ -20,13 +19,19 @@ pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>
         let mut line = String::new();
         match body_reading_started {
             true => {
-                reader.read_exact(&mut raw_buffer[..content_length])?;
+                stream.read_exact(&mut raw_buffer[..content_length])?;
                 line = String::from_utf8_lossy(&raw_buffer[..content_length]).to_string();
                 lines.push(line);
                 return Ok(lines);
             }
             false => {
-                reader.read_line(&mut line)?;
+                let mut buf = [0u8; 1];
+                let mut line_bytes = Vec::new();
+                while buf[0] != b'\n' {
+                    stream.read_exact(&mut buf)?;
+                    line_bytes.push(buf[0]);
+                }
+                line = String::from_utf8_lossy(&line_bytes).to_string();
                 match content_length_regex.captures(&line) {
                     Some(captures) => {
                         content_length = captures[1].parse()?;
