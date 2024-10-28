@@ -198,6 +198,7 @@ impl PathHandler for DeleteOrderWithIdPathHandler {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::food::{Bun, Burger, MenuItem, Patty, Topping};
 
