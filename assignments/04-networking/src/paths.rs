@@ -231,4 +231,46 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_path_matches_root() {
+        let handler = RootPathHandler;
+        assert!(handler.matches("GET", "/").is_ok());
+        assert!(handler.matches("GET", "/orders").is_err());
+    }
+
+    #[test]
+    fn test_path_matches_orders() {
+        let handler = GetOrdersPathHandler;
+        assert!(handler.matches("GET", "/orders").is_ok());
+        assert!(handler.matches("POST", "/orders").is_err());
+        assert!(handler.matches("DELETE", "/orders").is_err());
+        assert!(handler.matches("GET", "/").is_err());
+        assert!(handler.matches("GET", "/orders/1").is_err());
+    }
+
+    #[test]
+    fn test_path_matches_order_with_id() {
+        let handler = GetOrderWithIdPathHandler { id: 1 };
+        assert!(handler.matches("GET", "/orders/1").is_ok());
+        assert!(handler.matches("GET", "/orders").is_err());
+        assert!(handler.matches("GET", "/orders/abc").is_err());
+    }
+
+    #[test]
+    fn test_path_matches_delete_order_with_id() {
+        let handler = DeleteOrderWithIdPathHandler { id: 1 };
+        assert!(handler.matches("DELETE", "/orders/1").is_ok());
+        assert!(handler.matches("DELETE", "/orders").is_err());
+        assert!(handler.matches("GET", "/orders/1").is_err());
+        assert!(handler.matches("DELETE", "/orders/abc").is_err());
+    }
+    #[test]
+    fn test_path_matches_delete_orders() {
+        let handler = DeleteOrdersPathHandler;
+        assert!(handler.matches("DELETE", "/orders").is_ok());
+        assert!(handler.matches("GET", "/orders").is_err());
+        assert!(handler.matches("POST", "/orders").is_err());
+        assert!(handler.matches("DELETE", "/").is_err());
+        assert!(handler.matches("DELETE", "/orders/1").is_err());
+    }
 }
