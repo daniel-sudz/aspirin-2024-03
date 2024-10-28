@@ -37,7 +37,15 @@ fn get_db() -> Result<AspirinEatsDb> {
     }
 }
 
-fn handle_connection(mut stream: TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
+fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
+    let resp: HttpResponse = create_response(stream, db).unwrap_or_else(|_| {
+        HttpResponse::from(AspirinEatsError::InternalServerError)
+    });
+    stream.write(resp.to_string().as_bytes()).map_err(|e| AspirinEatsError::Io(e))?;
+    Ok(())
+}
+
+fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
 
     let lines = read_http_packet_tcp_stream(&mut stream)?;
@@ -72,8 +80,13 @@ fn main() -> Result<()> {
     let db = get_db()?;
     let listener = TcpListener::bind(BIND_ADDRESS)?;
     for stream in listener.incoming() {
-        let stream = stream?;
-        handle_connection(stream, &db)?;
+        match stream {
+            Ok(mut stream) => {
+                let _ = handle_connection(&mut stream, &db);
+            }
+            // stream can be dropped by the client
+            Err(_e) => {}
+        }
     }
     Ok(())
 }

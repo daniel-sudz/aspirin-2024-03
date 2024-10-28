@@ -25,4 +25,8 @@ pub enum AspirinEatsError {
     /// Error when request is for an HTTP method not supported on that path
     #[error("Method not allowed")]
     MethodNotAllowed,
+
+    /// Error when something goes wrong in the server
+    #[error("Internal server error")]
+    InternalServerError,
 }

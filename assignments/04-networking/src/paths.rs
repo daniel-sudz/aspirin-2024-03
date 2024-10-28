@@ -1,4 +1,4 @@
-use crate::{db::AspirinEatsDb, error::AspirinEatsError, food::Order, http::{HttpRequest, HttpResponse}};
+use crate::{db::AspirinEatsDb, error::AspirinEatsError, food::{Order, OrderRequest}, http::{HttpRequest, HttpResponse}};
 use anyhow::Result;
 use serde_json::Value;
 use regex::Regex;
@@ -72,12 +72,12 @@ impl PathHandler for CreateOrderPathHandler {
     fn handle(&self, request: &HttpRequest, db: &AspirinEatsDb) -> Result<HttpResponse> {
         println!("CreateOrderPathHandler");
 
-        match serde_json::from_str::<Order>(&request.body) {
-            Ok(order) => {
-                match db.add_order(order) {
+        match serde_json::from_str::<OrderRequest>(&request.body) {
+            Ok(order_request) => {
+                match db.add_order(order_request.into()) {
                     Ok(order_id) => {
                         println!("Order created with id {}", order_id);
-                        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: "".to_string() })
+                        Ok(HttpResponse { status_code: 200, status_text: "OK".to_string(), body: format!("created order with id {order_id}\n") })
                     }
                     Err(e) => {
                         Ok(HttpResponse::from(AspirinEatsError::Database(e)))
