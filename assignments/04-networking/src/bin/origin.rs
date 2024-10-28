@@ -6,10 +6,9 @@ use aspirin_eats::paths::{
 };
 use aspirin_eats::tcp::read_http_packet_tcp_stream;
 use aspirin_eats::{db::AspirinEatsDb, error::AspirinEatsError, http::HttpRequest};
-use regex::Regex;
 use std::time::Duration;
 use std::{
-    io::{Read, Write},
+    io::Write,
     net::{TcpListener, TcpStream},
 };
 

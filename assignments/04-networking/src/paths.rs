@@ -1,7 +1,7 @@
 use crate::{
     db::AspirinEatsDb,
     error::AspirinEatsError,
-    food::{Order, OrderRequest},
+    food::OrderRequest,
     http::{HttpRequest, HttpResponse},
 };
 use anyhow::Result;

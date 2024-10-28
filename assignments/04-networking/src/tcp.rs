@@ -1,8 +1,8 @@
 use anyhow::Result;
 use regex::Regex;
 use std::{
-    io::{BufRead, BufReader, Read, Write},
-    net::{TcpListener, TcpStream},
+    io::Read,
+    net::TcpStream,
 };
 
 /// Reads an HTTP packet from a TCP stream by parsing headers and body based on Content-Length
