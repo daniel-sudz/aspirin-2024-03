@@ -49,7 +49,9 @@ fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
 
 fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
-    let lines = read_http_packet_tcp_stream(&mut stream)?;
+    let Ok(lines) = read_http_packet_tcp_stream(&mut stream) else {
+        return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
+    };
     let Ok(request) = HttpRequest::try_from(lines) else {
         return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
     };
@@ -161,7 +163,7 @@ mod tests {
     #[serial]
     fn test_invalid_request() {
         start_server();
-        let response = send_request("INVALID REQUEST\r\n\r\n");
+        let response = send_request("GET HTTP GARBAGE");
         assert!(response.contains("400 Bad Request"));
     }
 }
