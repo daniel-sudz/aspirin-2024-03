@@ -49,7 +49,7 @@ fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
     Ok(())
 }
 
-fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
+fn create_response(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
     let Ok(lines) = read_http_packet_tcp_stream(stream) else {
         return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
