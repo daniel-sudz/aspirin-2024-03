@@ -35,11 +35,8 @@ pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>
                     line_bytes.push(buf[0]);
                 }
                 line = String::from_utf8_lossy(&line_bytes).to_string();
-                match content_length_regex.captures(&line) {
-                    Some(captures) => {
-                        content_length = captures[1].parse()?;
-                    }
-                    None => {}
+                if let Some(captures) = content_length_regex.captures(&line) {
+                    content_length = captures[1].parse()?;
                 }
                 if line == "\r\n" || line == "\n" {
                     body_reading_started = true;

@@ -44,14 +44,14 @@ fn handle_connection(stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<()> {
         .unwrap_or_else(|_| HttpResponse::from(AspirinEatsError::InternalServerError));
     stream
         .write(resp.to_string().as_bytes())
-        .map_err(|e| AspirinEatsError::Io(e))?;
+        .map_err(AspirinEatsError::Io)?;
     println!("[Origin] Terminated connection sucessfully");
     Ok(())
 }
 
 fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<HttpResponse> {
     println!("Handling connection");
-    let Ok(lines) = read_http_packet_tcp_stream(&mut stream) else {
+    let Ok(lines) = read_http_packet_tcp_stream(stream) else {
         return Ok(HttpResponse::from(AspirinEatsError::InvalidRequest));
     };
     let Ok(request) = HttpRequest::try_from(lines) else {
@@ -66,11 +66,8 @@ fn create_response(mut stream: &mut TcpStream, db: &AspirinEatsDb) -> Result<Htt
         Box::new(DeleteOrderWithIdPathHandler { id: 0 }),
     ];
     for path_handler in path_handlers {
-        match path_handler.matches(&request.method, &request.path) {
-            Ok(path_handler) => {
-                return path_handler.handle(&request, db);
-            }
-            Err(_) => {}
+        if let Ok(path_handler) = path_handler.matches(&request.method, &request.path) {
+            return path_handler.handle(&request, db);
         }
     }
     Ok(HttpResponse::from(AspirinEatsError::InvalidRequest))
