@@ -32,11 +32,11 @@ fn handle_connection(stream: &mut TcpStream, origin_addr: &str) -> Result<()> {
         }
     };
     // send request to origin
-    origin_stream.write(request.join("\n").as_bytes())?;
+    origin_stream.write_all(request.join("\n").as_bytes())?;
     // read response from origin
     let response = read_http_packet_tcp_stream(&mut origin_stream)?;
     // send response to client
-    stream.write(response.join("\n").as_bytes())?;
+    stream.write_all(response.join("\n").as_bytes())?;
     println!("[Reverse Proxy] Terminated connection sucessfully");
     Ok(())
 }
@@ -86,6 +86,7 @@ mod tests {
     use serial_test::serial;
 
     use super::*;
+    use std::process::{Child, Command};
     use std::thread;
     use std::time::Duration;
 

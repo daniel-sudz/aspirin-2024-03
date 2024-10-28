@@ -1,9 +1,6 @@
 use anyhow::Result;
 use regex::Regex;
-use std::{
-    io::Read,
-    net::TcpStream,
-};
+use std::{io::Read, net::TcpStream};
 
 /// Reads an HTTP packet from a TCP stream by parsing headers and body based on Content-Length
 /// Returns a vector of strings containing the lines of the HTTP packet
