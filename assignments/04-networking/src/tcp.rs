@@ -46,3 +46,53 @@ pub fn read_http_packet_tcp_stream(stream: &mut TcpStream) -> Result<Vec<String>
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use std::net::{TcpListener, TcpStream};
+    use std::thread;
+
+    #[test]
+    fn test_read_http_packet() {
+        // Start a TCP server in a separate thread
+        thread::spawn(|| {
+            let listener = TcpListener::bind("127.0.0.1:8081").unwrap();
+            let (mut stream, _) = listener.accept().unwrap();
+            
+            // Write a sample HTTP request
+            let request = "POST /orders HTTP/1.1\r\nContent-Length: 13\r\n\r\nHello, World!";
+            stream.write_all(request.as_bytes()).unwrap();
+        });
+
+        // Connect to the server
+        thread::sleep(std::time::Duration::from_millis(100)); // Give server time to start
+        let mut client = TcpStream::connect("127.0.0.1:8081").unwrap();
+
+        // Read and verify the HTTP packet
+        let lines = read_http_packet_tcp_stream(&mut client).unwrap();
+        
+        assert_eq!(lines[0], "POST /orders HTTP/1.1");
+        assert_eq!(lines[1], "Content-Length: 13");
+        assert_eq!(lines[2], "Hello, World!");
+    }
+
+    #[test]
+    fn test_read_http_packet_no_content_length() {
+        thread::spawn(|| {
+            let listener = TcpListener::bind("127.0.0.1:8082").unwrap();
+            let (mut stream, _) = listener.accept().unwrap();
+            
+            let request = "GET / HTTP/1.1\r\n\r\n";
+            stream.write_all(request.as_bytes()).unwrap();
+        });
+
+        thread::sleep(std::time::Duration::from_millis(100));
+        let mut client = TcpStream::connect("127.0.0.1:8082").unwrap();
+
+        let lines = read_http_packet_tcp_stream(&mut client).unwrap();
+        assert_eq!(lines[0], "GET / HTTP/1.1");
+        assert_eq!(lines[1], "");
+        assert_eq!(lines.len(), 2);
+    }
+}
