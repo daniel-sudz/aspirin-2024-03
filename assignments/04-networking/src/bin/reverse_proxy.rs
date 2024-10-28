@@ -264,7 +264,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_invalid_http() -> Result<()> {
-        let server = TestServer::new()?;
+        let _server = TestServer::new()?;
 
         // Test malformed HTTP request with no newline ending
         let mut stream = TcpStream::connect("127.0.0.1:8081")?;
