@@ -89,7 +89,6 @@ mod tests {
             self.proxy.kill().unwrap();
         }
     }
-
     #[test]
     #[serial]
     fn test_proxy_forwards_requests() -> Result<()> {
@@ -109,6 +108,92 @@ mod tests {
         // Verify response contains expected content
         assert!(response.contains("200 OK"));
         assert!(response.contains("Welcome to Aspirin Eats!"));
+
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_proxy_complex_flow() -> Result<()> {
+        let _server = TestServer::new()?;
+
+        // Test root endpoint
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("Welcome to Aspirin Eats!"));
+
+        // Clear out anything previously in the origin server
+        let mut stream = TcpStream::connect("127.0.0.1:8080")?;
+        let request = "DELETE /orders HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("reset all orders"));
+
+        // Test getting empty orders list
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "GET /orders HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        println!("response: {}", response);
+        assert!(response.contains("[]"));
+
+        // Test adding an order
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let order = r#"{"customer":"Test Customer","food":[{"Burger":{"bun":"Sesame","patty":"Beef","toppings":["Lettuce"]}}]}"#;
+        let request = format!("POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}", order.len(), order);
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("created order with id 1"));
+
+        // Test getting specific order
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "GET /orders/1 HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("Test Customer"));
+
+        // Test getting all orders
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "GET /orders HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("Test Customer"));
+
+        // Test deleting specific order
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "DELETE /orders/1 HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("deleted order with id 1"));
+
+        // Add another order and test delete all
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        stream.write(request.as_bytes())?;
+        let request = format!("POST /orders HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n\r\n{}", order.len(), order);
+        stream.write(request.as_bytes())?;
+
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "DELETE /orders HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("200 OK"));
+        assert!(response.contains("reset all orders"));
+
+        // Test error handling with invalid request
+        let mut stream = TcpStream::connect("127.0.0.1:8081")?;
+        let request = "INVALID /wrong HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        stream.write(request.as_bytes())?;
+        let response = read_http_packet_tcp_stream(&mut stream)?.join("\n");
+        assert!(response.contains("400 Bad Request"));
 
         Ok(())
     }
