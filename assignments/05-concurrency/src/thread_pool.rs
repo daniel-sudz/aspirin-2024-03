@@ -3,23 +3,34 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
 use std::collections::{HashMap, VecDeque};
 
-pub struct ThreadPool<T: Send> {
-    condition_queue: Arc<Condvar>,
-    sendto: Vec<Sender<Box<dyn FnOnce() -> Box<T> + Send>>>,
+/// 
+/// Lifetimes:
+/// - 'pool is the lifetime of the thread pool
+/// - all tasks are tied to 'pool
+/// - all threads are tied to 'pool
+/// 
+/// Safety: 
+/// - Threadpool uses the unsafe method spawn_unchecked to spawn threads
+/// - this is ok because threadpool kills all threads when it is dropped
+/// - since all tasks and threads are tied to 'pool there is no use after free risk
+pub struct ThreadPool<'pool, T: Send + 'pool> {
+    exec_queue_arc: Arc<(Mutex<VecDeque<Task<'pool, T>>>, Condvar)>,
+    results_map_arc: Arc<Mutex<HashMap<usize, T>>>,
     threads: Vec<thread::JoinHandle<()>>,
+    next_task_id: usize
 }
 
-struct Task<T: Send> {
-    task: Box<dyn FnOnce() -> T + Send>,
+struct Task<'pool, T: Send + 'pool> {
+    task: Box<dyn FnOnce() -> T + Send + 'pool>,
     task_id: usize,
 }
 
 // we implement a ThreadPool using standard locking mechanism on the consumer and producer
 // 
-impl<'pool, T: Send + 'pool> ThreadPool<T> {
+impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// Create a new LocalThreadPool with num_threads threads.
     ///
-    pub fn new(num_threads: usize) {
+    pub fn new(num_threads: usize) -> Self {
         let exec_queue_arc = Arc::new((Mutex::new(VecDeque::<Task<T>>::new()), Condvar::new()));
         let results_map_arc = Arc::new(Mutex::new(HashMap::<usize, T>::new()));
 
@@ -57,14 +68,27 @@ impl<'pool, T: Send + 'pool> ThreadPool<T> {
                         }).expect("[threadpool]::fatal os fails to spawn thread")
                     };
                     threads.push(handle);
-                }
+        }
+        ThreadPool { 
+            exec_queue_arc, 
+            results_map_arc, 
+            threads,
+            next_task_id: 0
+        }
     }
     /// Execute the provided function on the thread pool
     ///
     /// Errors:
     /// - If we fail to send a message, report an error
-    pub fn execute<F>(&self, f: F) {
-        todo!()
+    pub fn execute<F>(&mut self, f: F) -> usize 
+    where F: FnOnce() -> T + Send + 'static {
+        let task_id = self.next_task_id + 1;
+        self.next_task_id = task_id;
+
+        let task = Task { task: Box::new(f), task_id };
+        self.exec_queue_arc.0.lock().unwrap().push_back(task);
+        self.exec_queue_arc.1.notify_one();
+        task_id
     }
     /// Retrieve any results from the thread pool that have been computed
     pub fn get_results(&self) {
