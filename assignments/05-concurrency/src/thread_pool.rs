@@ -17,7 +17,7 @@ use std::collections::{HashMap, VecDeque};
 /// - since all tasks and threads are tied to 'pool there is no use after free risk
 pub struct ThreadPool<'pool, T: Send + 'pool> {
     exec_queue_arc: Arc<(Mutex<VecDeque<Task<'pool, T>>>, Condvar)>,
-    results_map_arc: Arc<Mutex<HashMap<usize, T>>>,
+    results_map_arc: Arc<(Mutex<HashMap<usize, T>>, Condvar)>,
     threads: Vec<thread::JoinHandle<()>>,
     active: Arc<AtomicBool>,
     next_task_id: usize
@@ -34,7 +34,8 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// Create a new ThreadPool with num_threads threads.
     pub fn new(num_threads: usize) -> Self {
         let exec_queue_arc = Arc::new((Mutex::new(VecDeque::<Task<T>>::new()), Condvar::new()));
-        let results_map_arc = Arc::new(Mutex::new(HashMap::<usize, T>::new()));
+        let results_map_arc = Arc::new((Mutex::new(HashMap::<usize, T>::new()), Condvar::new()));
+    
         let active = Arc::new(AtomicBool::new(true));
 
         let mut threads = Vec::new();
@@ -67,6 +68,12 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                             }
                         }; 
 
+                        // notify another thread to check for a new task 
+                        {
+                            let (_, cvar) = &*exec_queue_arc;
+                            cvar.notify_one();
+                        }
+
                         // execute the task if the pool is active
                         match task {
                             None => return,
@@ -75,9 +82,18 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                                 let result: T = (task.task)();
 
                                 // store the result in the results map
-                                let mut results_map = results_map_arc.lock().unwrap();
-                                results_map.insert(task.task_id, result);
-                            }
+                                {
+                                    let (lock, _) = &*results_map_arc;
+                                    let mut results_map = lock.lock().unwrap();
+                                    results_map.insert(task.task_id, result);
+                                }
+
+                                // notify parent thread if it's waiting for all results to finish
+                                {
+                                    let (_, cvar) = &*results_map_arc;
+                                    cvar.notify_one();
+                                }
+                           }
                         }
                     }
                     println!("thread exiting");
@@ -111,7 +127,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         }
 
         // notify a thread in the pool that a task is available
-        self.exec_queue_arc.1.notify_all();
+        self.exec_queue_arc.1.notify_one();
 
         // return the task id so the caller can associate the result with the task
         task_id
@@ -126,16 +142,17 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// - The results map is replaced with an empty map 
     /// - future calls to get_results will not return prior results from get_results
     pub fn get_results(&self) -> HashMap<usize, T> {
-        let mut results_map = self.results_map_arc.lock().unwrap();
+        let (lock, _) = &*self.results_map_arc;
+        let mut results_map = lock.lock().unwrap();
         let take_results = mem::take(&mut *results_map);
         take_results
     }
 
     /// Waits for all previously queued tasks to finish execution
     pub fn wait_for_all(&self) {
-        let (lock, cvar) = &*self.exec_queue_arc;
-        let queue = lock.lock().unwrap();
-        let _wait = cvar.wait_while(queue, |queue| !queue.is_empty()).unwrap();
+        let (results_map, cvar) = &*self.results_map_arc;
+        let mut results_map = results_map.lock().unwrap();
+        let _wait = cvar.wait_while(results_map, |results_map| results_map.len() != self.next_task_id).unwrap();
     }
 
     /// drop the threadpool
@@ -159,20 +176,18 @@ mod tests {
 
     #[test]
     fn test_basic_threadpool() {
-        let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
-        let one = pool.execute(|| 1);
-        let two = pool.execute(|| 2);
-        let three = pool.execute(|| 3);
-        let four = pool.execute(|| 4);
-        println!("waiting for all tasks to finish");
-        pool.wait_for_all();
-        println!("all tasks finished");
-        let results = pool.get_results();
-        /* 
-        assert_eq!(results.get(&one).unwrap(), &1);
-        assert_eq!(results.get(&two).unwrap(), &2);
-        assert_eq!(results.get(&three).unwrap(), &3);
-        assert_eq!(results.get(&four).unwrap(), &4);
-        */
+        for _ in 0..100 {
+            let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+            let one = pool.execute(|| 1);
+            let two = pool.execute(|| 2);
+            let three = pool.execute(|| 3);
+            let four = pool.execute(|| 4);
+            pool.wait_for_all();
+            let results = pool.get_results();
+            assert_eq!(results.get(&one).unwrap(), &1);
+            assert_eq!(results.get(&two).unwrap(), &2);
+            assert_eq!(results.get(&three).unwrap(), &3);
+            assert_eq!(results.get(&four).unwrap(), &4);
+        }
     }
 }
