@@ -1,4 +1,5 @@
 use std::mem;
+use std::sync::atomic::AtomicBool;
 use std::thread::{self, JoinHandle};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
@@ -18,6 +19,7 @@ pub struct ThreadPool<'pool, T: Send + 'pool> {
     exec_queue_arc: Arc<(Mutex<VecDeque<Task<'pool, T>>>, Condvar)>,
     results_map_arc: Arc<Mutex<HashMap<usize, T>>>,
     threads: Vec<thread::JoinHandle<()>>,
+    active: Arc<AtomicBool>,
     next_task_id: usize
 }
 
@@ -34,49 +36,66 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     pub fn new(num_threads: usize) -> Self {
         let exec_queue_arc = Arc::new((Mutex::new(VecDeque::<Task<T>>::new()), Condvar::new()));
         let results_map_arc = Arc::new(Mutex::new(HashMap::<usize, T>::new()));
+        let active = Arc::new(AtomicBool::new(true));
 
         let mut threads = Vec::new();
-                // Start of Selection
-                for i in 0..num_threads {
-                    // get a copy of the arcs
-                    let exec_queue_arc = exec_queue_arc.clone();
-                    let results_map_arc = results_map_arc.clone();
+        for i in 0..num_threads {
+            // get a copy of the arcs
+            let exec_queue_arc = exec_queue_arc.clone();
+            let results_map_arc = results_map_arc.clone();
+            let active = active.clone();
 
-                    // create one of the threads
-                    let builder = thread::Builder::new()
+            // create one of the threads
+            let builder = thread::Builder::new()
                                 .name(format!("threadpool-{}", i));
                     
-                    let handle = unsafe { 
-                        builder.spawn_unchecked(move || {
-                        
-                        let task = {
-                            // wait for a task to be available by using a condition variable
-                            let (lock, cvar) = &*exec_queue_arc;
-                            let queue = lock.lock().unwrap();
-                            let mut queue = cvar.wait_while(queue, |queue| queue.is_empty()).unwrap();
+            let handle = unsafe { 
+                builder.spawn_unchecked(move || {
+                    
+                    let task: Option<Task<'pool, T>> = {
+                        // wait for a task to be available by using a condition variable
+                        let (lock, cvar) = &*exec_queue_arc;
+                        let queue = lock.lock().unwrap();
+                        let mut queue = cvar.wait_while(queue, |queue| {
+                            if !active.load(std::sync::atomic::Ordering::Relaxed) {
+                                return true;
+                            }
+                            queue.is_empty()
+                        }).unwrap();
 
-                            // task is now available, take it and execute it
-                            queue.pop_front().unwrap()
-                        };
-
-                        // execute the task
-                        let result: T = (task.task)();
-
-                        // store the result in the results map
-                        let mut results_map = results_map_arc.lock().unwrap();
-                        results_map.insert(task.task_id, result);
-
-                        }).expect("[threadpool]::fatal os fails to spawn thread")
+                        // check if we exited because the threadpool is no longer active
+                        match !active.load(std::sync::atomic::Ordering::Relaxed) {
+                            true => None,
+                            false => Some(queue.pop_front().unwrap())
+                        }
                     };
-                    threads.push(handle);
+
+                    // execute the task if the pool is active
+                    match task {
+                        None => return,
+                        Some(task) => {
+                            // execute the task
+                            let result: T = (task.task)();
+
+                            // store the result in the results map
+                            let mut results_map = results_map_arc.lock().unwrap();
+                            results_map.insert(task.task_id, result);
+                        }
+                    }
+
+                    }).expect("[threadpool]::fatal os fails to spawn thread")
+                };
+                threads.push(handle);
         }
         ThreadPool { 
             exec_queue_arc, 
             results_map_arc, 
             threads,
+            active,
             next_task_id: 0
         }
     }
+
     /// Execute the provided function on the thread pool
     ///
     /// Errors:
@@ -112,10 +131,27 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         take_results
     }
 
-    // Waits for all previously queued tasks to finish execution
+    /// Waits for all previously queued tasks to finish execution
     pub fn wait_for_all(&self) {
         let (lock, cvar) = &*self.exec_queue_arc;
         let queue = lock.lock().unwrap();
         let _wait = cvar.wait_while(queue, |queue| !queue.is_empty()).unwrap();
+    }
+
+    /// drop the threadpool
+    /// 
+    /// Mutability:
+    /// - the threadpool is dropped and all threads are joined
+    /// - all resources associated with the threadpool are reclaimed
+    /// - all tasks are dropped and all results are discarded
+    pub fn drop(self) {
+        // wait for current tasks to finish
+        self.wait_for_all();
+
+        // drop all threads
+        for handle in self.threads {
+            handle.kill();
+            handle.join().unwrap();
+        }
     }
 }
