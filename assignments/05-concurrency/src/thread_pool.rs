@@ -51,40 +51,41 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                     
             let handle = unsafe { 
                 builder.spawn_unchecked(move || {
-                    
-                    let task: Option<Task<'pool, T>> = {
-                        // wait for a task to be available by using a condition variable
-                        let (lock, cvar) = &*exec_queue_arc;
-                        let queue = lock.lock().unwrap();
-                        let mut queue = cvar.wait_while(queue, |queue| {
-                            if !active.load(std::sync::atomic::Ordering::Relaxed) {
-                                return true;
+                    // threads run while the pool is active
+                    while active.load(std::sync::atomic::Ordering::Relaxed) { 
+                        let task: Option<Task<'pool, T>> = {
+                            // wait for a task to be available by using a condition variable
+                            let (lock, cvar) = &*exec_queue_arc;
+                            let queue = lock.lock().unwrap();
+                            let mut queue = cvar.wait_while(queue, |queue| {
+                                if !active.load(std::sync::atomic::Ordering::Relaxed) {
+                                    return true;
+                                }
+                                queue.is_empty()
+                            }).unwrap();
+
+                            // check if we exited because the threadpool is no longer active
+                            match !active.load(std::sync::atomic::Ordering::Relaxed) {
+                                true => None,
+                                false => Some(queue.pop_front().unwrap())
                             }
-                            queue.is_empty()
-                        }).unwrap();
+                        }; 
 
-                        // check if we exited because the threadpool is no longer active
-                        match !active.load(std::sync::atomic::Ordering::Relaxed) {
-                            true => None,
-                            false => Some(queue.pop_front().unwrap())
-                        }
-                    };
+                        // execute the task if the pool is active
+                        match task {
+                            None => return,
+                            Some(task) => {
+                                // execute the task
+                                let result: T = (task.task)();
 
-                    // execute the task if the pool is active
-                    match task {
-                        None => return,
-                        Some(task) => {
-                            // execute the task
-                            let result: T = (task.task)();
-
-                            // store the result in the results map
-                            let mut results_map = results_map_arc.lock().unwrap();
-                            results_map.insert(task.task_id, result);
+                                // store the result in the results map
+                                let mut results_map = results_map_arc.lock().unwrap();
+                                results_map.insert(task.task_id, result);
+                            }
                         }
                     }
-
-                    }).expect("[threadpool]::fatal os fails to spawn thread")
-                };
+                }).expect("[threadpool]::fatal os fails to spawn thread")
+            };
                 threads.push(handle);
         }
         ThreadPool { 
@@ -145,6 +146,9 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// - all resources associated with the threadpool are reclaimed
     /// - all tasks are dropped and all results are discarded
     pub fn drop(self) {
+        // set the pool to inactive
+        self.active.store(false, std::sync::atomic::Ordering::Relaxed);
+
         // wait for current tasks to finish
         self.wait_for_all();
 
