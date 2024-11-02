@@ -1,3 +1,4 @@
+use std::mem;
 use std::thread::{self, JoinHandle};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
@@ -86,12 +87,35 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         self.next_task_id = task_id;
 
         let task = Task { task: Box::new(f), task_id };
+
+        // push the task to the execution queue
         self.exec_queue_arc.0.lock().unwrap().push_back(task);
+
+        // notify a thread in the pool that a task is available
         self.exec_queue_arc.1.notify_one();
+
+        // return the task id so the caller can associate the result with the task
         task_id
     }
+
     /// Retrieve any results from the thread pool that have been computed
-    pub fn get_results(&self) {
-        todo!()
+    /// 
+    /// Returns:
+    /// - A map of task ids to results
+    /// 
+    /// Mutability: 
+    /// - The results map is replaced with an empty map 
+    /// - future calls to get_results will not return prior results from get_results
+    pub fn get_results(&self) -> HashMap<usize, T> {
+        let mut results_map = self.results_map_arc.lock().unwrap();
+        let take_results = mem::take(&mut *results_map);
+        take_results
+    }
+
+    // Waits for all previously queued tasks to finish execution
+    pub fn wait_for_all(&self) {
+        let (lock, cvar) = &*self.exec_queue_arc;
+        let queue = lock.lock().unwrap();
+        let _wait = cvar.wait_while(queue, |queue| !queue.is_empty()).unwrap();
     }
 }
