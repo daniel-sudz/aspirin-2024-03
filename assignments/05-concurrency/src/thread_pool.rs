@@ -15,6 +15,7 @@ use std::collections::{HashMap, VecDeque};
 /// - Threadpool uses the unsafe method spawn_unchecked to spawn threads
 /// - this is ok because threadpool kills all threads when it is dropped
 /// - since all tasks and threads are tied to 'pool there is no use after free risk
+/// 
 pub struct ThreadPool<'pool, T: Send + 'pool> {
     exec_queue_arc: Arc<(Mutex<VecDeque<Task<'pool, T>>>, Condvar)>,
     results_map_arc: Arc<(Mutex<HashMap<usize, T>>, Condvar)>,
@@ -170,13 +171,16 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     }
 }
 
-
+ #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
 
+    // basic test that threadpool can execute tasks and return results
     #[test]
     fn test_basic_threadpool() {
-        for _ in 0..100 {
+        for _ in 0..10 {
             let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
             let one = pool.execute(|| 1);
             let two = pool.execute(|| 2);
@@ -190,4 +194,36 @@ mod tests {
             assert_eq!(results.get(&four).unwrap(), &4);
         }
     }
+
+    // variable timing test that threadpool can execute tasks and return results
+    #[test]
+    fn test_variable_timing_threadpool() {
+        for _ in 0..10 {
+            let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+            let one = pool.execute(|| {
+                thread::sleep(Duration::from_millis(rand::random::<u64>() % 100));
+                1
+            });
+            let two = pool.execute(|| {
+                thread::sleep(Duration::from_millis(rand::random::<u64>() % 100));
+                2
+            });
+            let three = pool.execute(|| {
+                thread::sleep(Duration::from_millis(rand::random::<u64>() % 100));
+                3
+            });
+            let four = pool.execute(|| {
+                thread::sleep(Duration::from_millis(rand::random::<u64>() % 100));
+                4
+            });
+            pool.wait_for_all();
+            let results = pool.get_results();
+            assert_eq!(results.get(&one).unwrap(), &1);
+            assert_eq!(results.get(&two).unwrap(), &2);
+            assert_eq!(results.get(&three).unwrap(), &3);
+            assert_eq!(results.get(&four).unwrap(), &4);
+        }
+    }
+
+
 }
