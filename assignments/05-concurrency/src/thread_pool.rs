@@ -155,6 +155,13 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         let mut results_map = results_map.lock().unwrap();
         let _wait = cvar.wait_while(results_map, |results_map| results_map.len() != self.next_task_id).unwrap();
     }
+    
+    /// Wait for a specific task to finish execution
+    pub fn wait_for_task(&self, task_id: usize) {
+        let (results_map, cvar) = &*self.results_map_arc;
+        let mut results_map = results_map.lock().unwrap();
+        let _wait = cvar.wait_while(results_map, |results_map| !results_map.contains_key(&task_id)).unwrap();
+    }
 
     /// drop the threadpool
     /// 
@@ -225,5 +232,14 @@ mod tests {
         }
     }
 
+    // test that threadpool can wait for a specific task to finish execution
+    #[test]
+    fn test_wait_for_task() {
+        let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+        let task_id = pool.execute(|| 1);
+        pool.wait_for_task(task_id);
+        let results = pool.get_results();
+        assert_eq!(results.get(&task_id).unwrap(), &1);
+    }
 
 }
