@@ -141,21 +141,35 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
 
     /// drop the threadpool
     /// 
-    /// Mutability:
-    /// - the threadpool is dropped and all threads are joined
-    /// - all resources associated with the threadpool are reclaimed
-    /// - all tasks are dropped and all results are discarded
+    /// Safety:
+    /// - all threads are joined and all resources are reclaimed
     pub fn drop(self) {
         // set the pool to inactive
         self.active.store(false, std::sync::atomic::Ordering::Relaxed);
 
-        // wait for current tasks to finish
-        self.wait_for_all();
-
         // drop all threads
         for handle in self.threads {
-            handle.kill();
             handle.join().unwrap();
         }
+    }
+}
+
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_threadpool() {
+        let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+        let one = pool.execute(|| 1);
+        let two = pool.execute(|| 2);
+        let three = pool.execute(|| 3);
+        let four = pool.execute(|| 4);
+        pool.wait_for_all();
+        let results = pool.get_results();
+        assert_eq!(results.get(&one).unwrap(), &1);
+        assert_eq!(results.get(&two).unwrap(), &2);
+        assert_eq!(results.get(&three).unwrap(), &3);
+        assert_eq!(results.get(&four).unwrap(), &4);
     }
 }
