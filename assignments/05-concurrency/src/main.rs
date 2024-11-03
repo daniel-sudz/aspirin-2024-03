@@ -1,6 +1,5 @@
-use std::{slice::Chunks, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use anyhow::Result;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use rand::Rng;
 use thread_pool::ThreadPool;
@@ -37,7 +36,7 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
 }
 
 /// classical merge sort algorithm
-fn merge_sort<'a>(arr: &'a [i64]) -> Vec<i64> {
+fn merge_sort(arr: &[i64]) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
@@ -51,9 +50,9 @@ fn merge_sort<'a>(arr: &'a [i64]) -> Vec<i64> {
 }
 
 /// Merge parallel using a thread pool
-fn merge_parallel<'pool>(
+fn merge_parallel(
     chunks: Vec<Vec<i64>>,
-    pool: Arc<ThreadPool<'pool, Vec<i64>>>,
+    pool: Arc<ThreadPool<'_, Vec<i64>>>,
 ) -> Vec<i64> {
     let pool_copy = Arc::clone(&pool);
     let pool_copy_2 = Arc::clone(&pool);

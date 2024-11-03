@@ -1,9 +1,8 @@
 use std::collections::{HashMap, VecDeque};
 use std::mem;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
-use std::thread::{self, JoinHandle};
+use std::thread::{self};
 
 ///
 /// Lifetimes:
@@ -164,14 +163,14 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     pub fn get_results(&self) -> HashMap<usize, T> {
         let (lock, _) = &*self.results_map_arc;
         let mut results_map = lock.lock().unwrap();
-        let take_results = mem::take(&mut *results_map);
-        take_results
+        
+        mem::take(&mut *results_map)
     }
 
     /// Waits for all previously queued tasks to finish execution
     pub fn wait_for_all(&self) {
         let (results_map, cvar) = &*self.results_map_arc;
-        let mut results_map = results_map.lock().unwrap();
+        let results_map = results_map.lock().unwrap();
         let _wait = cvar
             .wait_while(results_map, |results_map| {
                 results_map.len() != self.next_task_id.load(std::sync::atomic::Ordering::Relaxed)
