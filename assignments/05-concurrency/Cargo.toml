@@ -6,6 +6,7 @@ rust-version = "1.82.0"
 
 [dependencies]
 anyhow = "1.0.91"
+criterion = "0.5.1"
 crossbeam = "0.8.4"
 ntest_timeout = "0.9.3"
 rand = "0.8.5"

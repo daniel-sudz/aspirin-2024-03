@@ -35,7 +35,6 @@ struct Task<'pool, T: Send + 'pool> {
 impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// Create a new ThreadPool with num_threads threads.
     pub fn new(num_threads: usize) -> Self {
-        println!("creating threadpool with {} threads", num_threads);
         let exec_queue_arc = Arc::new((Mutex::new(VecDeque::<Task<T>>::new()), Condvar::new()));
         let results_map_arc = Arc::new((Mutex::new(HashMap::<usize, T>::new()), Condvar::new()));
     
@@ -60,13 +59,11 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                     while active.load(std::sync::atomic::Ordering::Relaxed) { 
                         let task: Option<Task<'pool, T>> = {
                             // wait for a task to be available by using a condition variable
-                            println!("thread {} waiting for a task", i);
                             let (lock, cvar) = &*exec_queue_arc;
                             let queue = lock.lock().unwrap();
                             let mut queue = cvar.wait_while(queue, |queue| {
                                 active.load(std::sync::atomic::Ordering::Relaxed) && queue.is_empty()
                             }).unwrap();
-                            println!("thread {} got a task", i);
 
                             // check if we exited because the threadpool is no longer active
                             match active.load(std::sync::atomic::Ordering::Relaxed) {
@@ -79,7 +76,6 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                         {
                             let (_, cvar) = &*exec_queue_arc;
                             cvar.notify_one();
-                            println!("thread {} notified another thread", i);
                         }
 
                         // execute the task if the pool is active
@@ -87,7 +83,6 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                             None => return,
                             Some(task) => {
                                 avail_threads.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
-                                println!("thread {} executing task {}", i, task.task_id);
                                 // execute the task
                                 let result: T = (task.task)();
 
@@ -98,7 +93,6 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                                 {
                                     let (lock, _) = &*results_map_arc;
                                     let mut results_map = lock.lock().unwrap();
-                                    println!("thread {} inserting result for task {}", i, task.task_id);
                                     results_map.insert(task.task_id, result);
                                 }
 
@@ -110,7 +104,6 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                            }
                         }
                     }
-                    println!("thread exiting");
                 }).expect("[threadpool]::fatal os fails to spawn thread")
             };
             threads.push(handle);
@@ -138,7 +131,6 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         {
             // push the task to the execution queue
             self.exec_queue_arc.0.lock().unwrap().push_back(task);
-            println!("thread pushing task {} to the queue", task_id);
         }
 
         // notify a thread in the pool that a task is available
