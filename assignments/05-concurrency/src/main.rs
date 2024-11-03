@@ -91,12 +91,14 @@ fn _merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<Thre
 
 
 fn bench_merge_sort_parallel(c: &mut Criterion) {
-    let input_sizes = vec![100, 1_000, 10_000, 100_000, 1_000_000];
-    let thread_counts = vec![2, 4, 8, 16, 32, 64, 128, 256];
+    let input_sizes = vec![100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
+    let thread_counts = vec![8, 16, 32, 64, 128, 256];
 
     let mut group = c.benchmark_group("merge_sort_parallel");
     group.sampling_mode(SamplingMode::Flat);
     group.measurement_time(Duration::from_secs(1));
+    group.warm_up_time(Duration::from_millis(10));
+    group.sample_size(10);
 
     for size in input_sizes {
         let arr = random_vec(size);
@@ -108,7 +110,7 @@ fn bench_merge_sort_parallel(c: &mut Criterion) {
                 |b, &threads| {
                     b.iter(|| {
                         let pool = Arc::new(ThreadPool::new(threads));
-                        merge_sort_parallel(&arr, threads, pool)
+                        merge_sort_parallel(&arr, threads, pool);
                     })
                 },
             );
@@ -171,12 +173,16 @@ mod tests {
 
     #[test]
     fn test_merge_sort_parallel_many_thread() {
-        let arr = random_vec(10_000);
-        let mut arr_copy = arr.clone();
-        let pool = Arc::new(ThreadPool::new(10));
-        let result = merge_sort_parallel(&arr, 8, pool);
-        arr_copy.sort();
-        assert_eq!(result, arr_copy);
+        for thread_count in 1..100 {
+            for input_size in (1..120).step_by(10) {
+                let arr = random_vec(input_size);
+                let mut arr_copy = arr.clone();
+                let pool = Arc::new(ThreadPool::new(thread_count));
+                let result = merge_sort_parallel(&arr, thread_count, pool);
+                arr_copy.sort();
+                assert_eq!(result, arr_copy);
+            }
+        }
     }
 
 }
