@@ -176,16 +176,22 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         self.avail_threads.load(std::sync::atomic::Ordering::Relaxed)
     }
 
-    /// drop the threadpool
-    /// 
-    /// Safety:
-    /// - all threads are joined and all resources are reclaimed
-    pub fn drop(self) {
+}
+
+/// drop the threadpool
+/// 
+/// Safety:
+/// - all threads are joined and all resources are reclaimed
+impl<'pool, T: Send + 'pool> Drop for ThreadPool<'pool, T> {
+    fn drop(&mut self) {
         // set the pool to inactive
         self.active.store(false, std::sync::atomic::Ordering::Relaxed);
 
+        // notify all threads to exit
+        self.exec_queue_arc.1.notify_all();
+
         // drop all threads
-        for handle in self.threads {
+        for handle in self.threads.drain(..) {
             handle.join().unwrap();
         }
     }

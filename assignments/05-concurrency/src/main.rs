@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use rand::Rng;
 use thread_pool::ThreadPool;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 
 mod error;
 mod thread_pool;
@@ -95,6 +95,8 @@ fn bench_merge_sort_parallel(c: &mut Criterion) {
     let thread_counts = vec![1, 2, 4, 8, 16];
 
     let mut group = c.benchmark_group("merge_sort_parallel");
+    group.sample_size(10);
+    group.sampling_mode(SamplingMode::Flat);
 
     for size in input_sizes {
         let arr = random_vec(size);
@@ -156,12 +158,15 @@ mod tests {
     #[test]
     #[ntest_timeout::timeout(1000)]
     fn test_merge_sort_parallel_one_thread() {
+        println!("test_merge_sort_parallel_one_thread");
         let arr = random_vec(10_000);
         let mut arr_copy = arr.clone();
-        let pool = Arc::new(ThreadPool::new(1));
-        let result = merge_sort_parallel(&arr, 1, pool);
-        arr_copy.sort();
-        assert_eq!(result, arr_copy);
+        {
+            let pool = Arc::new(ThreadPool::new(1));
+            let result = merge_sort_parallel(&arr, 1, pool);
+            arr_copy.sort();
+            assert_eq!(result, arr_copy);
+        }
     }
 
     #[test]

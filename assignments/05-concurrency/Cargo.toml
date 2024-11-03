@@ -12,3 +12,7 @@ ntest_timeout = "0.9.3"
 rand = "0.8.5"
 thiserror = "1.0.65"
 
+[[bench]]
+name = "merge_sort_bench"
+path = "src/main.rs"
+harness = false
