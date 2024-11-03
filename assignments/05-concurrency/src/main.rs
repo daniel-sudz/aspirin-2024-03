@@ -35,13 +35,13 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
     result
 }
 
-fn merge_sort_parallel<'a>(arr: &'a mut [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
+fn merge_sort_parallel<'a>(arr: &'a [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
             // split array into two halves 
             let mid = arr.len() / 2;
-            let (left, right): (&'a mut [i64], &'a mut [i64]) = arr.split_at_mut(mid);
+            let (left, right): (&'a [i64], &'a [i64]) = arr.split_at(mid);
 
             let left_sort_pool = pool.clone();
             let sort_left_id = pool.execute(move || {
@@ -101,4 +101,14 @@ mod tests {
         arr_copy.sort();
         assert_eq!(result, arr_copy);
     }   
+
+    #[test]
+    fn test_merge_sort_parallel_one_thread() {
+        let arr = random_vec(10);
+        let mut arr_copy = arr.clone();
+        let pool = Arc::new(ThreadPool::new(1));
+        let result = merge_sort_parallel(&arr, pool);
+        arr_copy.sort();
+        assert_eq!(result, arr_copy);
+    }
 }
