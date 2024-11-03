@@ -225,4 +225,16 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_merge_sort_random() {
+        // Test with various array sizes
+        for size in [0, 1, 2, 10, 100, 1000, 10_000] {
+            let arr = random_vec(size);
+            let mut arr_copy = arr.clone();
+            let result = merge_sort(&arr);
+            arr_copy.sort();
+            assert_eq!(result, arr_copy);
+        }
+    }
 }
