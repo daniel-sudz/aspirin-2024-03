@@ -134,7 +134,7 @@ fn bench_merge_sort_parallel(c: &mut Criterion) {
         10_000_000,
         100_000_000,
     ];
-    let thread_counts = vec![8, 16, 32, 64, 128, 256];
+    let thread_counts = vec![1, 2, 4, 8, 16, 32, 64, 128, 256];
 
     let mut group = c.benchmark_group("merge_sort_parallel");
     group.sampling_mode(SamplingMode::Flat);
