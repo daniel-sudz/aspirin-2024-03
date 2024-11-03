@@ -97,12 +97,14 @@ fn merge_sort_parallel<'a>(
         0 | 1 => arr.to_vec(),
         _ => {
             // guard against empty array
-            if arr.len() == 0 {
+            if arr.is_empty() {
                 return vec![];
             }
 
             // split array into chunks of size threads_avail
-            let chunks: Vec<&'a [i64]> = arr.chunks(std::cmp::max(1, arr.len() / threads_avail)).collect();
+            let chunks: Vec<&'a [i64]> = arr
+                .chunks(std::cmp::max(1, arr.len() / threads_avail))
+                .collect();
 
             // sort each chunk in parallel
             let sorted_chunks_ids = chunks
