@@ -21,7 +21,8 @@ pub struct ThreadPool<'pool, T: Send + 'pool> {
     results_map_arc: Arc<(Mutex<HashMap<usize, T>>, Condvar)>,
     threads: Vec<thread::JoinHandle<()>>,
     active: Arc<AtomicBool>,
-    next_task_id: AtomicUsize
+    next_task_id: AtomicUsize,
+    avail_threads: Arc<AtomicUsize>
 }
 
 struct Task<'pool, T: Send + 'pool> {
@@ -39,6 +40,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         let results_map_arc = Arc::new((Mutex::new(HashMap::<usize, T>::new()), Condvar::new()));
     
         let active = Arc::new(AtomicBool::new(true));
+        let avail_threads = Arc::new(AtomicUsize::new(num_threads));
 
         let mut threads = Vec::new();
         for i in 0..num_threads {
@@ -46,6 +48,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
             let exec_queue_arc = exec_queue_arc.clone();
             let results_map_arc = results_map_arc.clone();
             let active = active.clone();
+            let avail_threads = avail_threads.clone();
 
             // create one of the threads
             let builder = thread::Builder::new()
@@ -83,9 +86,13 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
                         match task {
                             None => return,
                             Some(task) => {
+                                avail_threads.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
                                 println!("thread {} executing task {}", i, task.task_id);
                                 // execute the task
                                 let result: T = (task.task)();
+
+                                // thread is now available to execute another task
+                                avail_threads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
                                 // store the result in the results map
                                 {
@@ -113,7 +120,8 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
             results_map_arc, 
             threads,
             active,
-            next_task_id: AtomicUsize::new(0)
+            next_task_id: AtomicUsize::new(0),
+            avail_threads: Arc::new(AtomicUsize::new(num_threads))
         }
     }
 
@@ -134,7 +142,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         }
 
         // notify a thread in the pool that a task is available
-        self.exec_queue_arc.1.notify_all();
+        self.exec_queue_arc.1.notify_one();
 
         // return the task id so the caller can associate the result with the task
         task_id
@@ -168,6 +176,12 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
         let results_map = results_map.lock().unwrap();
         let mut results_map = cvar.wait_while(results_map, |results_map| !results_map.contains_key(&task_id)).unwrap();
         results_map.remove(&task_id).unwrap()
+    }
+
+
+    /// gets number of idle threads available to execute tasks
+    pub fn get_avail_threads(&self) -> usize {
+        self.avail_threads.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// drop the threadpool
