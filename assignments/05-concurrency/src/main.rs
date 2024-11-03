@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use rand::Rng;
 use thread_pool::ThreadPool;
@@ -33,25 +35,7 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
     result
 }
 
-/*
-// merge sort using standard recursive approach
-fn merge_sort(arr: &mut [i64]) -> Vec<i64> {
-    match arr.len() {
-        0 | 1 => arr.to_vec(),
-        _ => {
-            let mid = arr.len() / 2;
-            let (left, right): (&mut [i64], &mut [i64]) = arr.split_at_mut(mid);
-            let mut left_vec = Vec::from(left);
-            let mut right_vec = Vec::from(right);
-
-            let left_sorted = merge_sort(&mut left_vec);
-            let right_sorted = merge_sort(&mut right_vec);
-            merge_sorted_halves(&left_sorted, &right_sorted)
-        }
-    }
-}
-
-fn merge_sort_parallel<'a>(arr: &'a mut Vec<i64>, pool: &'a mut ThreadPool<'a, Vec<i64>>) -> Vec<i64> {
+fn merge_sort_parallel<'a>(arr: &'a mut [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
@@ -59,14 +43,14 @@ fn merge_sort_parallel<'a>(arr: &'a mut Vec<i64>, pool: &'a mut ThreadPool<'a, V
             let mid = arr.len() / 2;
             let (left, right): (&'a mut [i64], &'a mut [i64]) = arr.split_at_mut(mid);
 
-            // queue the sort operation for each half
-            let mut left_vec = Vec::from(left);
-            let mut right_vec = Vec::from(right);
+            let left_sort_pool = pool.clone();
             let sort_left_id = pool.execute(move || {
-                merge_sort(&mut left_vec)
+                merge_sort_parallel(left, left_sort_pool)
             });
+
+            let right_sort_pool = pool.clone();
             let sort_right_id = pool.execute(move || {
-                merge_sort(&mut right_vec) 
+                merge_sort_parallel(right, right_sort_pool) 
             });
 
             // wait for both halves to be sorted
@@ -74,11 +58,10 @@ fn merge_sort_parallel<'a>(arr: &'a mut Vec<i64>, pool: &'a mut ThreadPool<'a, V
             let sort_right = pool.wait_for_task(sort_right_id);
 
             // merge the two halves
-            merge_sorted_halves(&mut sort_left.clone(), &mut sort_right.clone())
+            merge_sorted_halves(&sort_left, &sort_right)
         }
     }
 }
-    */
 
 fn main() -> Result<()> {
     let data = random_vec(10_000_000);
