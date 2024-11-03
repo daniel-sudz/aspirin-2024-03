@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{slice::Chunks, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use rand::Rng;
@@ -36,6 +36,60 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
     result
 }
 
+/// classical merge sort algorithm
+fn merge_sort<'a>(arr: &'a [i64]) -> Vec<i64> {
+    match arr.len() {
+        0 | 1 => arr.to_vec(),
+        _ => {
+            let mid = arr.len() / 2;
+            let (left, right): (&[i64], &[i64]) = arr.split_at(mid);
+            let sorted_left = merge_sort(left);
+            let sorted_right = merge_sort(right);
+            merge_sorted_halves(&sorted_left, &sorted_right)
+        }
+    }
+}
+
+
+/// Merge parallel using a thread pool
+fn merge_parallel<'pool>(chunks: Vec<Vec<i64>>, pool: Arc<ThreadPool<'pool, Vec<i64>>>) -> Vec<i64> {
+    let pool_copy = Arc::clone(&pool);
+    let pool_copy_2 = Arc::clone(&pool);
+    let pool_copy_3 = Arc::clone(&pool);
+
+    let chunks_len = chunks.len();
+    match chunks_len {
+        1 => chunks[0].clone(),
+        _ => {
+            // split chunks into pairs
+            let merge_pairs: Vec<Vec<Vec<i64>>> = chunks.chunks(2).map(|c| c.to_vec()).collect();
+
+            // merge chunks in parallel
+            let merge_tasks = merge_pairs.into_iter().map(move |merge_pair| {
+                match merge_pair.len() {
+                    1 => {
+                        pool_copy.execute(move || {
+                            merge_pair[0].clone()
+                        })
+                    }
+                    _ => {
+                        pool_copy.execute(move || {
+                            merge_sorted_halves(&merge_pair[0], &merge_pair[1])
+                        })
+                    }
+                }
+            }).collect::<Vec<_>>();
+
+            // wait for all chunks to be merged
+            let result = merge_tasks.iter().map(move |task| {
+                pool_copy_2.wait_for_task(*task)
+            }).collect::<Vec<_>>();
+            merge_parallel(result, pool_copy_3)
+        }
+    }
+}
+
+
 /// Merge sort parallel using a thread pool
 /// 
 /// threads_avail: number of threads available to sort the array
@@ -44,47 +98,24 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
 /// WARNING: the threadpool must have at least threads_avail threads available
 ///          otherwise the function will deadlock
 fn merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
-    _merge_sort_parallel(arr, threads_avail, pool)
-}
-
-fn _merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
-            // split array into two halves 
-            let mid = arr.len() / 2;
-            let (left, right): (&'a [i64], &'a [i64]) = arr.split_at(mid);
+            // split array into chunks of size threads_avail
+            let chunks: Vec<&'a [i64]> = arr.chunks(threads_avail).collect();
 
-            // if we have enough threads, sort both halves in parallel
-            let avail_threads = pool.get_avail_threads();
-            match threads_avail > avail_threads {
-                true => {
-                    // sort left array in parallel
-                    let left_sort_pool = pool.clone();
-                    let sort_left_id = pool.execute(move || {
-                        _merge_sort_parallel(left, threads_avail, left_sort_pool)
-                    });
-        
-                    // sort right array in parallel
-                    let right_sort_pool = pool.clone();
-                    let sort_right_id = pool.execute(move || {
-                        _merge_sort_parallel(right, threads_avail, right_sort_pool) 
-                    });
+            // sort each chunk in parallel
+            let sorted_chunks_ids = chunks.into_iter().map(|chunk| {
+                pool.execute(move || {
+                    merge_sort(chunk)
+                })
+            }).collect::<Vec<_>>();
 
-                    // wait for both halves to be sorted
-                    let sort_left = pool.wait_for_task(sort_left_id);
-                    let sort_right = pool.wait_for_task(sort_right_id);
+            // wait for all chunks to be sorted
+            let sorted_chunks = sorted_chunks_ids.iter().map(|id| pool.wait_for_task(*id)).collect::<Vec<_>>();
 
-                    // merge the two halves
-                    merge_sorted_halves(&sort_left, &sort_right)
-                }
-                false => {
-                    // sort and merge both halves sequentially
-                    let sort_left = _merge_sort_parallel(left, threads_avail, pool.clone());
-                    let sort_right = _merge_sort_parallel(right, threads_avail, pool.clone());
-                    merge_sorted_halves(&sort_left, &sort_right)
-                }
-            }
+            // merge all sorted chunks
+            merge_parallel(sorted_chunks, pool)
         }
     }
 }
