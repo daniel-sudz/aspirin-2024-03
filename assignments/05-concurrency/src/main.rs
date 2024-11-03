@@ -13,50 +13,49 @@ fn random_vec(capacity: usize) -> Vec<i64> {
 }
 
 // merge two sorted lists into one sorted list using standard two pointer approach
-// assume the two sorted lists are contiguous in the input array
-// writes the return in place to the input array
-fn merge_sorted_halves<'a>(arr: &'a mut [i64], left_s: usize, left_len: usize, right_s: usize, right_len: usize)  {
-    let mut result = vec![0; left_len + right_len];
+fn merge_sorted_halves<'a>(left_arr: &'a mut [i64], right_arr: &'a mut [i64]) -> Vec<i64> {
+
+    let mut result = vec![0; left_arr.len() + right_arr.len()];
     let mut left_iter = 0;
     let mut right_iter = 0;
 
     // sort with two point approach
-    while left_iter < left_len || right_iter < right_len {
-        if (right_iter == right_len) || (left_iter != left_len && arr[left_s + left_iter] < arr[right_s + right_iter])   {
-            result[left_iter + right_iter] = arr[left_s + left_iter];
+    while left_iter < left_arr.len() || right_iter < right_arr.len() {
+        if (right_iter == right_arr.len()) || (left_iter != left_arr.len() && left_arr[left_iter] < right_arr[right_iter])   {
+            result[left_iter + right_iter] = left_arr[left_iter];
             left_iter += 1;
         }
         else {
-            result[left_iter + right_iter] = arr[right_s + right_iter];
+            result[left_iter + right_iter] = right_arr[right_iter];
             right_iter += 1;
         }
     }
-    arr.copy_from_slice(&result);
+    result
 }
 
 /*
-fn merge_sort_parallel<'a>(data: &'a mut [i64], pool: &'a ThreadPool<'a, i64>) -> &'a [i64] {
-    match data.len() {
-        0 | 1 => return data,
+fn merge_sort_parallel<'a>(arr: &'a mut [i64], pool: &'a ThreadPool<'a, ()>) {
+    match arr.len() {
+        0 | 1 => (),
         _ => {
             // split array into two halves with mutable ownership using split_at_mut
-            let mid = data.len() / 2;
-            let (mut left, mut right) = data.split_at_mut(mid);
-            
+            let mid = arr.len() / 2;
+            let (left, right) = arr.split_at_mut(mid);
+
             // queue the sort operation for each half
-            let sort_left = pool.execute(|| merge_sort_parallel(&mut left, pool));
-            let sort_right = pool.execute(|| merge_sort_parallel(&mut right, pool));
+            let sort_left = pool.execute(|| merge_sort_parallel(left, pool));
+            let sort_right = pool.execute(|| merge_sort_parallel(right, pool));
 
             // wait for both halves to be sorted
             pool.wait_for_task(sort_left);
             pool.wait_for_task(sort_right);
 
             // merge the two halves
-            merge_sorted_halves(&mut left, &mut right)
+            merge_sorted_halves(arr, 0, mid, mid, arr.len() - mid);
         }
     }
 }
-    */
+*/
 
 fn main() -> Result<()> {
     let data = random_vec(10_000_000);
@@ -70,11 +69,11 @@ mod tests {
     #[test]
     fn test_merge_sorted_halves_basic() {
         let mut arr = vec![1, 4, 7, 2, 5, 8, 3, 6, 9];
-        let (left, right) = arr.split_at_mut(3);
+        let (mut left, mut right) = arr.split_at_mut(3);
         left.sort();
         right.sort();
-        merge_sorted_halves(&mut arr, 0, 3, 3, 6);
-        assert_eq!(arr, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        let result = merge_sorted_halves(&mut left, &mut right);
+        assert_eq!(result, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
     }
 
     #[test]
@@ -90,11 +89,10 @@ mod tests {
             right.sort();
         }
 
-        let first_half_len = split_point;
-        let second_half_len = arr.len() - first_half_len;
-        merge_sorted_halves(&mut arr, 0, first_half_len, first_half_len, second_half_len);
+        let (mut left, mut right) = arr.split_at_mut(split_point);
+        let result = merge_sorted_halves(&mut left, &mut right);
 
         arr_copy.sort();
-        assert_eq!(arr, arr_copy);
+        assert_eq!(result, arr_copy);
     }   
 }
