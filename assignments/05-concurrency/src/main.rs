@@ -1,9 +1,9 @@
 use std::{slice::Chunks, sync::Arc, time::Duration};
 
 use anyhow::Result;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use rand::Rng;
 use thread_pool::ThreadPool;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 
 mod error;
 mod thread_pool;
@@ -17,18 +17,18 @@ fn random_vec(capacity: usize) -> Vec<i64> {
 
 // merge two sorted lists into one sorted list using standard two pointer approach
 fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64> {
-
     let mut result = vec![0; left_arr.len() + right_arr.len()];
     let mut left_iter = 0;
     let mut right_iter = 0;
 
     // sort with two point approach
     while left_iter < left_arr.len() || right_iter < right_arr.len() {
-        if (right_iter == right_arr.len()) || (left_iter != left_arr.len() && left_arr[left_iter] < right_arr[right_iter])   {
+        if (right_iter == right_arr.len())
+            || (left_iter != left_arr.len() && left_arr[left_iter] < right_arr[right_iter])
+        {
             result[left_iter + right_iter] = left_arr[left_iter];
             left_iter += 1;
-        }
-        else {
+        } else {
             result[left_iter + right_iter] = right_arr[right_iter];
             right_iter += 1;
         }
@@ -50,9 +50,11 @@ fn merge_sort<'a>(arr: &'a [i64]) -> Vec<i64> {
     }
 }
 
-
 /// Merge parallel using a thread pool
-fn merge_parallel<'pool>(chunks: Vec<Vec<i64>>, pool: Arc<ThreadPool<'pool, Vec<i64>>>) -> Vec<i64> {
+fn merge_parallel<'pool>(
+    chunks: Vec<Vec<i64>>,
+    pool: Arc<ThreadPool<'pool, Vec<i64>>>,
+) -> Vec<i64> {
     let pool_copy = Arc::clone(&pool);
     let pool_copy_2 = Arc::clone(&pool);
     let pool_copy_3 = Arc::clone(&pool);
@@ -65,39 +67,37 @@ fn merge_parallel<'pool>(chunks: Vec<Vec<i64>>, pool: Arc<ThreadPool<'pool, Vec<
             let merge_pairs: Vec<Vec<Vec<i64>>> = chunks.chunks(2).map(|c| c.to_vec()).collect();
 
             // merge chunks in parallel
-            let merge_tasks = merge_pairs.into_iter().map(move |merge_pair| {
-                match merge_pair.len() {
-                    1 => {
-                        pool_copy.execute(move || {
-                            merge_pair[0].clone()
-                        })
-                    }
-                    _ => {
-                        pool_copy.execute(move || {
-                            merge_sorted_halves(&merge_pair[0], &merge_pair[1])
-                        })
-                    }
-                }
-            }).collect::<Vec<_>>();
+            let merge_tasks = merge_pairs
+                .into_iter()
+                .map(move |merge_pair| match merge_pair.len() {
+                    1 => pool_copy.execute(move || merge_pair[0].clone()),
+                    _ => pool_copy
+                        .execute(move || merge_sorted_halves(&merge_pair[0], &merge_pair[1])),
+                })
+                .collect::<Vec<_>>();
 
             // wait for all chunks to be merged
-            let result = merge_tasks.iter().map(move |task| {
-                pool_copy_2.wait_for_task(*task)
-            }).collect::<Vec<_>>();
+            let result = merge_tasks
+                .iter()
+                .map(move |task| pool_copy_2.wait_for_task(*task))
+                .collect::<Vec<_>>();
             merge_parallel(result, pool_copy_3)
         }
     }
 }
 
-
 /// Merge sort parallel using a thread pool
-/// 
+///
 /// threads_avail: number of threads available to sort the array
 /// pool: thread pool to use for sorting
-/// 
+///
 /// WARNING: the threadpool must have at least threads_avail threads available
 ///          otherwise the function will deadlock
-fn merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
+fn merge_sort_parallel<'a>(
+    arr: &'a [i64],
+    threads_avail: usize,
+    pool: Arc<ThreadPool<'a, Vec<i64>>>,
+) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
@@ -105,14 +105,16 @@ fn merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<Threa
             let chunks: Vec<&'a [i64]> = arr.chunks(threads_avail).collect();
 
             // sort each chunk in parallel
-            let sorted_chunks_ids = chunks.into_iter().map(|chunk| {
-                pool.execute(move || {
-                    merge_sort(chunk)
-                })
-            }).collect::<Vec<_>>();
+            let sorted_chunks_ids = chunks
+                .into_iter()
+                .map(|chunk| pool.execute(move || merge_sort(chunk)))
+                .collect::<Vec<_>>();
 
             // wait for all chunks to be sorted
-            let sorted_chunks = sorted_chunks_ids.iter().map(|id| pool.wait_for_task(*id)).collect::<Vec<_>>();
+            let sorted_chunks = sorted_chunks_ids
+                .iter()
+                .map(|id| pool.wait_for_task(*id))
+                .collect::<Vec<_>>();
 
             // merge all sorted chunks
             merge_parallel(sorted_chunks, pool)
@@ -120,9 +122,16 @@ fn merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<Threa
     }
 }
 
-
 fn bench_merge_sort_parallel(c: &mut Criterion) {
-    let input_sizes = vec![100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
+    let input_sizes = vec![
+        100,
+        1_000,
+        10_000,
+        100_000,
+        1_000_000,
+        10_000_000,
+        100_000_000,
+    ];
     let thread_counts = vec![8, 16, 32, 64, 128, 256];
 
     let mut group = c.benchmark_group("merge_sort_parallel");
@@ -133,7 +142,7 @@ fn bench_merge_sort_parallel(c: &mut Criterion) {
 
     for size in input_sizes {
         let arr = random_vec(size);
-        
+
         for threads in &thread_counts {
             group.bench_with_input(
                 BenchmarkId::new(format!("size_{}", size), threads),
@@ -152,7 +161,6 @@ fn bench_merge_sort_parallel(c: &mut Criterion) {
 
 criterion_group!(benches, bench_merge_sort_parallel);
 criterion_main!(benches);
-
 
 #[cfg(test)]
 mod tests {
@@ -186,7 +194,7 @@ mod tests {
 
         arr_copy.sort();
         assert_eq!(result, arr_copy);
-    }   
+    }
 
     #[test]
     #[ntest_timeout::timeout(1000)]
@@ -215,5 +223,4 @@ mod tests {
             }
         }
     }
-
 }

@@ -1,28 +1,28 @@
+use std::collections::{HashMap, VecDeque};
 use std::mem;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::thread::{self, JoinHandle};
-use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
-use std::collections::{HashMap, VecDeque};
+use std::thread::{self, JoinHandle};
 
-/// 
+///
 /// Lifetimes:
 /// - 'pool is the lifetime of the thread pool
 /// - all tasks are tied to 'pool
 /// - all threads are tied to 'pool
-/// 
-/// Safety: 
+///
+/// Safety:
 /// - Threadpool uses the unsafe method spawn_unchecked to spawn threads
 /// - this is ok because threadpool kills all threads when it is dropped
 /// - since all tasks and threads are tied to 'pool there is no use after free risk
-/// 
+///
 pub struct ThreadPool<'pool, T: Send + 'pool> {
     exec_queue_arc: Arc<(Mutex<VecDeque<Task<'pool, T>>>, Condvar)>,
     results_map_arc: Arc<(Mutex<HashMap<usize, T>>, Condvar)>,
     threads: Vec<thread::JoinHandle<()>>,
     active: Arc<AtomicBool>,
     next_task_id: AtomicUsize,
-    avail_threads: Arc<AtomicUsize>
+    avail_threads: Arc<AtomicUsize>,
 }
 
 struct Task<'pool, T: Send + 'pool> {
@@ -31,13 +31,13 @@ struct Task<'pool, T: Send + 'pool> {
 }
 
 // we implement a ThreadPool using standard locking mechanism on the consumer and producer
-// 
+//
 impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// Create a new ThreadPool with num_threads threads.
     pub fn new(num_threads: usize) -> Self {
         let exec_queue_arc = Arc::new((Mutex::new(VecDeque::<Task<T>>::new()), Condvar::new()));
         let results_map_arc = Arc::new((Mutex::new(HashMap::<usize, T>::new()), Condvar::new()));
-    
+
         let active = Arc::new(AtomicBool::new(true));
         let avail_threads = Arc::new(AtomicUsize::new(num_threads));
 
@@ -50,71 +50,77 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
             let avail_threads = avail_threads.clone();
 
             // create one of the threads
-            let builder = thread::Builder::new()
-                                .name(format!("threadpool-{}", i));
-                    
-            let handle = unsafe { 
-                builder.spawn_unchecked(move || {
-                    // threads run while the pool is active
-                    while active.load(std::sync::atomic::Ordering::Relaxed) { 
-                        let task: Option<Task<'pool, T>> = {
-                            // wait for a task to be available by using a condition variable
-                            let (lock, cvar) = &*exec_queue_arc;
-                            let queue = lock.lock().unwrap();
-                            let mut queue = cvar.wait_while(queue, |queue| {
-                                active.load(std::sync::atomic::Ordering::Relaxed) && queue.is_empty()
-                            }).unwrap();
+            let builder = thread::Builder::new().name(format!("threadpool-{}", i));
 
-                            // check if we exited because the threadpool is no longer active
-                            match active.load(std::sync::atomic::Ordering::Relaxed) {
-                                false => None,
-                                true => Some(queue.pop_front().unwrap())
+            let handle = unsafe {
+                builder
+                    .spawn_unchecked(move || {
+                        // threads run while the pool is active
+                        while active.load(std::sync::atomic::Ordering::Relaxed) {
+                            let task: Option<Task<'pool, T>> = {
+                                // wait for a task to be available by using a condition variable
+                                let (lock, cvar) = &*exec_queue_arc;
+                                let queue = lock.lock().unwrap();
+                                let mut queue = cvar
+                                    .wait_while(queue, |queue| {
+                                        active.load(std::sync::atomic::Ordering::Relaxed)
+                                            && queue.is_empty()
+                                    })
+                                    .unwrap();
+
+                                // check if we exited because the threadpool is no longer active
+                                match active.load(std::sync::atomic::Ordering::Relaxed) {
+                                    false => None,
+                                    true => Some(queue.pop_front().unwrap()),
+                                }
+                            };
+
+                            // notify another thread to check for a new task
+                            {
+                                let (_, cvar) = &*exec_queue_arc;
+                                cvar.notify_one();
                             }
-                        }; 
 
-                        // notify another thread to check for a new task 
-                        {
-                            let (_, cvar) = &*exec_queue_arc;
-                            cvar.notify_one();
-                        }
+                            // execute the task if the pool is active
+                            match task {
+                                None => return,
+                                Some(task) => {
+                                    avail_threads
+                                        .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+                                    // execute the task
+                                    let result: T = (task.task)();
 
-                        // execute the task if the pool is active
-                        match task {
-                            None => return,
-                            Some(task) => {
-                                avail_threads.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
-                                // execute the task
-                                let result: T = (task.task)();
+                                    // thread is now available to execute another task
+                                    avail_threads
+                                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-                                // thread is now available to execute another task
-                                avail_threads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                                    // store the result in the results map
+                                    {
+                                        let (lock, _) = &*results_map_arc;
+                                        let mut results_map = lock.lock().unwrap();
+                                        results_map.insert(task.task_id, result);
+                                    }
 
-                                // store the result in the results map
-                                {
-                                    let (lock, _) = &*results_map_arc;
-                                    let mut results_map = lock.lock().unwrap();
-                                    results_map.insert(task.task_id, result);
+                                    // notify parent thread if it's waiting for all results to finish
+                                    {
+                                        let (_, cvar) = &*results_map_arc;
+                                        cvar.notify_one();
+                                    }
                                 }
-
-                                // notify parent thread if it's waiting for all results to finish
-                                {
-                                    let (_, cvar) = &*results_map_arc;
-                                    cvar.notify_one();
-                                }
-                           }
+                            }
                         }
-                    }
-                }).expect("[threadpool]::fatal os fails to spawn thread")
+                    })
+                    .expect("[threadpool]::fatal os fails to spawn thread")
             };
             threads.push(handle);
         }
-        ThreadPool { 
-            exec_queue_arc, 
-            results_map_arc, 
+        ThreadPool {
+            exec_queue_arc,
+            results_map_arc,
             threads,
             active,
             next_task_id: AtomicUsize::new(0),
-            avail_threads: Arc::new(AtomicUsize::new(num_threads))
+            avail_threads: Arc::new(AtomicUsize::new(num_threads)),
         }
     }
 
@@ -122,11 +128,18 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     ///
     /// Errors:
     /// - If we fail to send a message, report an error
-    pub fn execute<F>(&self, f: F) -> usize 
-    where F: FnOnce() -> T + Send + 'pool {
-        let task_id = self.next_task_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    pub fn execute<F>(&self, f: F) -> usize
+    where
+        F: FnOnce() -> T + Send + 'pool,
+    {
+        let task_id = self
+            .next_task_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-        let task = Task { task: Box::new(f), task_id };
+        let task = Task {
+            task: Box::new(f),
+            task_id,
+        };
 
         {
             // push the task to the execution queue
@@ -141,12 +154,12 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     }
 
     /// Retrieve any results from the thread pool that have been computed
-    /// 
+    ///
     /// Returns:
     /// - A map of task ids to results
-    /// 
-    /// Mutability: 
-    /// - The results map is replaced with an empty map 
+    ///
+    /// Mutability:
+    /// - The results map is replaced with an empty map
     /// - future calls to get_results will not return prior results from get_results
     pub fn get_results(&self) -> HashMap<usize, T> {
         let (lock, _) = &*self.results_map_arc;
@@ -159,33 +172,41 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     pub fn wait_for_all(&self) {
         let (results_map, cvar) = &*self.results_map_arc;
         let mut results_map = results_map.lock().unwrap();
-        let _wait = cvar.wait_while(results_map, |results_map| results_map.len() != self.next_task_id.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+        let _wait = cvar
+            .wait_while(results_map, |results_map| {
+                results_map.len() != self.next_task_id.load(std::sync::atomic::Ordering::Relaxed)
+            })
+            .unwrap();
     }
-    
+
     /// Wait for a specific task to finish execution
     pub fn wait_for_task(&self, task_id: usize) -> T {
         let (results_map, cvar) = &*self.results_map_arc;
         let results_map = results_map.lock().unwrap();
-        let mut results_map = cvar.wait_while(results_map, |results_map| !results_map.contains_key(&task_id)).unwrap();
+        let mut results_map = cvar
+            .wait_while(results_map, |results_map| {
+                !results_map.contains_key(&task_id)
+            })
+            .unwrap();
         results_map.remove(&task_id).unwrap()
     }
 
-
     /// gets number of idle threads available to execute tasks
     pub fn get_avail_threads(&self) -> usize {
-        self.avail_threads.load(std::sync::atomic::Ordering::Relaxed)
+        self.avail_threads
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
-
 }
 
 /// drop the threadpool
-/// 
+///
 /// Safety:
 /// - all threads are joined and all resources are reclaimed
 impl<'pool, T: Send + 'pool> Drop for ThreadPool<'pool, T> {
     fn drop(&mut self) {
         // set the pool to inactive
-        self.active.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.active
+            .store(false, std::sync::atomic::Ordering::Relaxed);
 
         // notify all threads to exit
         self.exec_queue_arc.1.notify_all();
@@ -197,7 +218,7 @@ impl<'pool, T: Send + 'pool> Drop for ThreadPool<'pool, T> {
     }
 }
 
- #[cfg(test)]
+#[cfg(test)]
 mod tests {
     use std::time::Duration;
 
@@ -259,5 +280,4 @@ mod tests {
         let result = pool.wait_for_task(task_id);
         assert_eq!(result, 1);
     }
-
 }
