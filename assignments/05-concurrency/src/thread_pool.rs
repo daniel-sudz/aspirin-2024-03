@@ -160,14 +160,16 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     /// Mutability:
     /// - The results map is replaced with an empty map
     /// - future calls to get_results will not return prior results from get_results
+    #[allow(unused)]
     pub fn get_results(&self) -> HashMap<usize, T> {
         let (lock, _) = &*self.results_map_arc;
         let mut results_map = lock.lock().unwrap();
-        
+
         mem::take(&mut *results_map)
     }
 
     /// Waits for all previously queued tasks to finish execution
+    #[allow(unused)]
     pub fn wait_for_all(&self) {
         let (results_map, cvar) = &*self.results_map_arc;
         let results_map = results_map.lock().unwrap();
@@ -179,6 +181,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     }
 
     /// Wait for a specific task to finish execution
+    #[allow(unused)]
     pub fn wait_for_task(&self, task_id: usize) -> T {
         let (results_map, cvar) = &*self.results_map_arc;
         let results_map = results_map.lock().unwrap();
@@ -191,6 +194,7 @@ impl<'pool, T: Send + 'pool> ThreadPool<'pool, T> {
     }
 
     /// gets number of idle threads available to execute tasks
+    #[allow(unused)]
     pub fn get_avail_threads(&self) -> usize {
         self.avail_threads
             .load(std::sync::atomic::Ordering::Relaxed)

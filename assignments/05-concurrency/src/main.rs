@@ -50,10 +50,7 @@ fn merge_sort(arr: &[i64]) -> Vec<i64> {
 }
 
 /// Merge parallel using a thread pool
-fn merge_parallel(
-    chunks: Vec<Vec<i64>>,
-    pool: Arc<ThreadPool<'_, Vec<i64>>>,
-) -> Vec<i64> {
+fn merge_parallel(chunks: Vec<Vec<i64>>, pool: Arc<ThreadPool<'_, Vec<i64>>>) -> Vec<i64> {
     let pool_copy = Arc::clone(&pool);
     let pool_copy_2 = Arc::clone(&pool);
     let pool_copy_3 = Arc::clone(&pool);
