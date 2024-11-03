@@ -4,7 +4,6 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Samplin
 use rand::Rng;
 use thread_pool::ThreadPool;
 
-mod error;
 mod thread_pool;
 
 /// Generate a random vector of size capacity filled with random i64s
