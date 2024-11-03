@@ -53,6 +53,8 @@ fn merge_sort_parallel<'a>(arr: &'a [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) 
                 merge_sort_parallel(right, right_sort_pool) 
             });
 
+            return vec![];
+
             // wait for both halves to be sorted
             let sort_left = pool.wait_for_task(sort_left_id);
             let sort_right = pool.wait_for_task(sort_right_id);
@@ -103,7 +105,9 @@ mod tests {
     }   
 
     #[test]
+    #[ntest_timeout::timeout(1000)]
     fn test_merge_sort_parallel_one_thread() {
+        println!("test_merge_sort_parallel_one_thread");
         let arr = random_vec(10);
         let mut arr_copy = arr.clone();
         let pool = Arc::new(ThreadPool::new(1));
