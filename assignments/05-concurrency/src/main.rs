@@ -35,7 +35,18 @@ fn merge_sorted_halves<'a>(left_arr: &'a [i64], right_arr: &'a [i64]) -> Vec<i64
     result
 }
 
-fn merge_sort_parallel<'a>(arr: &'a [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
+/// Merge sort parallel using a thread pool
+/// 
+/// threads_avail: number of threads available to sort the array
+/// pool: thread pool to use for sorting
+/// 
+/// WARNING: the threadpool must have at least threads_avail threads available
+///          otherwise the function will deadlock
+fn merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
+    _merge_sort_parallel(arr, threads_avail, 1, pool)
+}
+
+fn _merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, depth: usize, pool: Arc<ThreadPool<'a, Vec<i64>>>) -> Vec<i64> {
     match arr.len() {
         0 | 1 => arr.to_vec(),
         _ => {
@@ -43,24 +54,36 @@ fn merge_sort_parallel<'a>(arr: &'a [i64], pool: Arc<ThreadPool<'a, Vec<i64>>>) 
             let mid = arr.len() / 2;
             let (left, right): (&'a [i64], &'a [i64]) = arr.split_at(mid);
 
-            let left_sort_pool = pool.clone();
-            let sort_left_id = pool.execute(move || {
-                merge_sort_parallel(left, left_sort_pool)
-            });
+            // if we have enough threads, sort both halves in parallel
+            let max_needed_threads = 1 << (depth + 1);
+            match threads_avail >= max_needed_threads {
+                true => {
+                    // sort left array in parallel
+                    let left_sort_pool = pool.clone();
+                    let sort_left_id = pool.execute(move || {
+                        _merge_sort_parallel(left, threads_avail, depth + 1, left_sort_pool)
+                    });
+        
+                    // sort right array in parallel
+                    let right_sort_pool = pool.clone();
+                    let sort_right_id = pool.execute(move || {
+                        _merge_sort_parallel(right, threads_avail, depth + 1, right_sort_pool) 
+                    });
 
-            let right_sort_pool = pool.clone();
-            let sort_right_id = pool.execute(move || {
-                merge_sort_parallel(right, right_sort_pool) 
-            });
+                    // wait for both halves to be sorted
+                    let sort_left = pool.wait_for_task(sort_left_id);
+                    let sort_right = pool.wait_for_task(sort_right_id);
 
-            return vec![];
-
-            // wait for both halves to be sorted
-            let sort_left = pool.wait_for_task(sort_left_id);
-            let sort_right = pool.wait_for_task(sort_right_id);
-
-            // merge the two halves
-            merge_sorted_halves(&sort_left, &sort_right)
+                    // merge the two halves
+                    merge_sorted_halves(&sort_left, &sort_right)
+                }
+                false => {
+                    // sort and merge both halves sequentially
+                    let sort_left = _merge_sort_parallel(left, threads_avail, depth + 1, pool.clone());
+                    let sort_right = _merge_sort_parallel(right, threads_avail, depth + 1, pool.clone());
+                    merge_sorted_halves(&sort_left, &sort_right)
+                }
+            }
         }
     }
 }
@@ -108,10 +131,10 @@ mod tests {
     #[ntest_timeout::timeout(1000)]
     fn test_merge_sort_parallel_one_thread() {
         println!("test_merge_sort_parallel_one_thread");
-        let arr = random_vec(10);
+        let arr = random_vec(10_000);
         let mut arr_copy = arr.clone();
         let pool = Arc::new(ThreadPool::new(1));
-        let result = merge_sort_parallel(&arr, pool);
+        let result = merge_sort_parallel(&arr, 1, pool);
         arr_copy.sort();
         assert_eq!(result, arr_copy);
     }
