@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
 use rand::Rng;
@@ -91,12 +91,12 @@ fn _merge_sort_parallel<'a>(arr: &'a [i64], threads_avail: usize, pool: Arc<Thre
 
 
 fn bench_merge_sort_parallel(c: &mut Criterion) {
-    let input_sizes = vec![10_000, 100_000, 1_000_000];
-    let thread_counts = vec![1, 2, 4, 8, 16];
+    let input_sizes = vec![100, 1_000, 10_000, 100_000, 1_000_000];
+    let thread_counts = vec![2, 4, 8, 16, 32, 64, 128, 256];
 
     let mut group = c.benchmark_group("merge_sort_parallel");
-    group.sample_size(10);
     group.sampling_mode(SamplingMode::Flat);
+    group.measurement_time(Duration::from_secs(1));
 
     for size in input_sizes {
         let arr = random_vec(size);
