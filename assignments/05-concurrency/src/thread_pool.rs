@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn test_basic_threadpool() {
         for _ in 0..10 {
-            let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+            let pool: ThreadPool<'_, i32> = ThreadPool::new(4);
             let one = pool.execute(|| 1);
             let two = pool.execute(|| 2);
             let three = pool.execute(|| 3);
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn test_variable_timing_threadpool() {
         for _ in 0..10 {
-            let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+            let pool: ThreadPool<'_, i32> = ThreadPool::new(4);
             let one = pool.execute(|| {
                 thread::sleep(Duration::from_millis(rand::random::<u64>() % 100));
                 1
@@ -278,7 +278,7 @@ mod tests {
     // test that threadpool can wait for a specific task to finish execution
     #[test]
     fn test_wait_for_task() {
-        let mut pool: ThreadPool<'_, i32> = ThreadPool::new(4);
+        let pool: ThreadPool<'_, i32> = ThreadPool::new(4);
         let task_id = pool.execute(|| 1);
         let result = pool.wait_for_task(task_id);
         assert_eq!(result, 1);
