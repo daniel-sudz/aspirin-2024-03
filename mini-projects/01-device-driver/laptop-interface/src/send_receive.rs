@@ -1,6 +1,7 @@
 use std::ffi::{CStr, CString};
 use std::ptr;
 use std::os::raw::{c_char, c_int, c_void};
+use anyhow::Result;
 
 #[repr(C)]
 pub struct sp_port {
@@ -56,102 +57,36 @@ extern "C" {
     fn sp_free_error_message(message: *mut c_char);
 }
 
-pub fn check(result: SpReturn) -> i32 {
+pub fn check(result: SpReturn) -> Result<()> {
     match result {
-        SpReturn::SP_ERR_ARG => {
-            println!("Error: Invalid argument.");
-            std::process::abort();
-        }
-        SpReturn::SP_ERR_FAIL => unsafe {
-            let error_message = sp_last_error_message();
-            println!("Error: Failed: {}", CStr::from_ptr(error_message).to_string_lossy());
-            sp_free_error_message(error_message);
-            std::process::abort();
-        },
-        SpReturn::SP_ERR_SUPP => {
-            println!("Error: Not supported.");
-            std::process::abort();
-        }
-        SpReturn::SP_ERR_MEM => {
-            println!("Error: Couldn't allocate memory.");
-            std::process::abort();
-        }
-        SpReturn::SP_OK => 0,
+        SpReturn::SP_OK => Ok(()),
+        _ => Err(anyhow::anyhow!("Error: {:?}", result)),
     }
 }
 
-pub fn send_receive(port_names: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let num_ports = port_names.len();
-    if num_ports < 1 || num_ports > 2 {
-        return Err("Usage: Need 1 or 2 ports".into());
-    }
-
-    let mut ports: Vec<*mut sp_port> = vec![ptr::null_mut(); num_ports];
+pub fn configure_send_receive(port_name: String) -> Result<()> {
+    let mut port: *mut sp_port = ptr::null_mut();
 
     unsafe {
-        // Open and configure each port
-        for i in 0..num_ports {
-            println!("Looking for port {}.", port_names[i]);
-            let port_name = CString::new(port_names[i].as_str())?;
-            check(sp_get_port_by_name(port_name.as_ptr(), &mut ports[i]));
-            
-            println!("Opening port.");
-            check(sp_open(ports[i], SpMode::SP_MODE_READ_WRITE));
-            
-            println!("Setting port to 9600 8N1, no flow control.");
-            check(sp_set_baudrate(ports[i], 9600));
-            check(sp_set_bits(ports[i], 8));
-            check(sp_set_parity(ports[i], SpParity::SP_PARITY_NONE));
-            check(sp_set_stopbits(ports[i], 1));
-            check(sp_set_flowcontrol(ports[i], SpFlowControl::SP_FLOWCONTROL_NONE));
-        }
+        let port_name = CString::new(port_name.as_str())?;
 
-        // Send and receive data
-        for tx in 0..num_ports {
-            let rx = if num_ports == 1 { 0 } else { if tx == 0 { 1 } else { 0 } };
-            let tx_port = ports[tx];
-            let rx_port = ports[rx];
-
-            let data = "Hello!";
-            let size = data.len();
-            let timeout = 1000;
-
-            println!("Sending '{}' ({} bytes) on port {}.", 
-                data, size, 
-                CStr::from_ptr(sp_get_port_name(tx_port)).to_string_lossy());
-
-            let result = check(sp_blocking_write(tx_port, data.as_ptr() as *const c_void, size, timeout));
-            
-            if result == size as i32 {
-                println!("Sent {} bytes successfully.", size);
-            } else {
-                println!("Timed out, {}/{} bytes sent.", result, size);
-            }
-
-            let mut buf = vec![0u8; size + 1];
-            
-            println!("Receiving {} bytes on port {}.", 
-                size,
-                CStr::from_ptr(sp_get_port_name(rx_port)).to_string_lossy());
-
-            let result = check(sp_blocking_read(rx_port, buf.as_mut_ptr() as *mut c_void, size, timeout));
-
-            if result == size as i32 {
-                println!("Received {} bytes successfully.", size);
-            } else {
-                println!("Timed out, {}/{} bytes received.", result, size);
-            }
-
-            buf[result as usize] = 0;
-            println!("Received '{}'.", std::str::from_utf8(&buf[..result as usize])?);
-        }
-
-        // Cleanup
-        for i in 0..num_ports {
-            check(sp_close(ports[i]));
-            sp_free_port(ports[i]);
-        }
+        let _ = check(sp_get_port_by_name(port_name.as_ptr(), &mut port))?;
+        let _ = check(sp_open(port, SpMode::SP_MODE_READ_WRITE))?;
+        let _ = check(sp_set_baudrate(port, 9600))?;
+        let _ = check(sp_set_bits(port, 8));
+        let _ = check(sp_set_parity(port, SpParity::SP_PARITY_NONE));
+        let _ = check(sp_set_stopbits(port, 1));
+        let _ = check(sp_set_flowcontrol(port, SpFlowControl::SP_FLOWCONTROL_NONE));
     }
-
     Ok(())
+}
+
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_configure_send_receive() {
+        configure_send_receive("/dev/cu.usbmodem2101".to_string()).unwrap();
+    }
 }
