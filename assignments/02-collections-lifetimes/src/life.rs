@@ -1,19 +1,77 @@
-fn split_string(string: &str, delimeter: &str) -> Vec<&str> {
-    todo!()
+#![allow(dead_code)]
+
+use std::mem::swap;
+
+// use the built-in split with the exception of handling the empty end split case
+fn split_string<'a>(string: &'a str, delimeter: &str) -> Vec<&'a str> {
+    let mut result = string.split(delimeter).collect::<Vec<&str>>();
+    while !result.is_empty() && result[result.len() - 1].is_empty() {
+        result.pop();
+    }
+    result
 }
 
 #[derive(PartialEq, Debug)]
-struct Differences {
-    only_in_first: Vec<&str>,
-    only_in_second: Vec<&str>,
+struct Differences<'a, 'b> {
+    only_in_first: Vec<&'a str>,
+    only_in_second: Vec<&'b str>,
 }
 
-fn find_differences(first_string: &str, second_string: &str) -> Differences {
-    todo!()
+// re-use the split_string function and use the built in contains to match on every possible word
+fn find_differences<'a, 'b>(first_string: &'a str, second_string: &'b str) -> Differences<'a, 'b> {
+    let split_first = split_string(first_string, " ");
+    let split_second = split_string(second_string, " ");
+
+    let mut only_in_first: Vec<&'a str> = Vec::new();
+    let mut only_in_second: Vec<&'b str> = Vec::new();
+
+    for word in &split_first {
+        if !second_string.contains(word) {
+            only_in_first.push(word);
+        }
+    }
+
+    for word in &split_second {
+        if !first_string.contains(word) {
+            only_in_second.push(word);
+        }
+    }
+
+    Differences {
+        only_in_first,
+        only_in_second,
+    }
 }
 
+// helper function to check if char is a vowel
+fn is_vowel(c: &char) -> bool {
+    matches!(c, 'a' | 'e' | 'i' | 'o' | 'u')
+}
+
+// consumes current word until vowel and then swaps the to the other name to continue
+// until both names are exhausted
 fn merge_names(first_name: &str, second_name: &str) -> String {
-    todo!()
+    let mut merged_name = String::new();
+
+    let mut iter_first = first_name.chars().peekable();
+    let mut iter_second = second_name.chars().peekable();
+
+    while iter_first.peek().is_some() || iter_second.peek().is_some() {
+        // check of vowel is the first char and consume is so
+        if iter_first.peek().is_some() && is_vowel(iter_first.peek().unwrap()) {
+            merged_name.push(iter_first.next().unwrap());
+        }
+
+        // consume until next vowel
+        while iter_first.peek().is_some() && !is_vowel(iter_first.peek().unwrap()) {
+            merged_name.push(iter_first.next().unwrap());
+        }
+
+        // swap to other name
+        swap(&mut iter_first, &mut iter_second);
+    }
+
+    merged_name
 }
 
 #[cfg(test)]
