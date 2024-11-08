@@ -2,6 +2,7 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 use std::os::raw::{c_char, c_int, c_void};
 use anyhow::Result;
+use libc::strlen;
 
 #[repr(C)]
 pub struct sp_port {
@@ -72,21 +73,51 @@ pub fn configure_send_receive(port_name: String) -> Result<()> {
 
         let _ = check(sp_get_port_by_name(port_name.as_ptr(), &mut port))?;
         let _ = check(sp_open(port, SpMode::SP_MODE_READ_WRITE))?;
-        let _ = check(sp_set_baudrate(port, 9600))?;
-        let _ = check(sp_set_bits(port, 8));
-        let _ = check(sp_set_parity(port, SpParity::SP_PARITY_NONE));
-        let _ = check(sp_set_stopbits(port, 1));
-        let _ = check(sp_set_flowcontrol(port, SpFlowControl::SP_FLOWCONTROL_NONE));
+        let _ = check(sp_set_baudrate(port, 115200))?;
+        let _ = check(sp_set_bits(port, 8))?;
+        let _ = check(sp_set_parity(port, SpParity::SP_PARITY_NONE))?;
+        let _ = check(sp_set_stopbits(port, 1))?;
+        let _ = check(sp_set_flowcontrol(port, SpFlowControl::SP_FLOWCONTROL_NONE))?;
+        println!("Arduino port configured");
+    }
+    Ok(())
+}
+
+pub fn send_receive(port_name: String, data: String) -> Result<()> {
+    let mut port: *mut sp_port = ptr::null_mut();
+    unsafe {
+        let port_name = CString::new(port_name.as_str())?;
+        let _ = check(sp_get_port_by_name(port_name.as_ptr(), &mut port))?;
+        let data = CString::new(data.as_str())?;
+        let data_len: usize = strlen(data.as_ptr());
+
+        println!("data_len: {}", data_len);
+
+        let _ = check(sp_get_port_by_name(port_name.as_ptr(), &mut port))?;
+
+        let bytes_written: i32 = sp_blocking_write(port, data.as_ptr() as *const c_void, data_len, 10000) as i32;
+        println!("bytes_written: {}", bytes_written);
     }
     Ok(())
 }
 
 
 mod tests {
+    use crate::list_ports::get_rpi_port;
+
     use super::*;
 
     #[test]
     fn test_configure_send_receive() {
-        configure_send_receive("/dev/cu.usbmodem2101".to_string()).unwrap();
+        configure_send_receive(get_rpi_port().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn test_send_receive() {
+        let port = get_rpi_port().unwrap();
+        println!("port: {}", port);
+        configure_send_receive(port.clone()).unwrap();
+        send_receive(port.clone(), "init controller".to_string()).unwrap();
+        send_receive(port.clone(), "set ready led".to_string()).unwrap();
     }
 }

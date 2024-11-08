@@ -1,5 +1,4 @@
-mod list_ports;
-mod send_receive;
+mod libserial;
 
 fn main() {
     println!("Hello, World!");

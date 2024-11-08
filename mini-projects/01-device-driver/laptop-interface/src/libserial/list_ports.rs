@@ -1,6 +1,7 @@
 use std::ffi::{CStr, CString};
 use std::ptr;
 use std::os::raw::{c_char, c_int};
+use anyhow::Result;
 
 // Define the sp_port struct as an opaque type
 #[repr(C)]
@@ -65,6 +66,16 @@ pub fn list_ports() -> Vec<String> {
             }
         }
         ports
+    }
+}
+
+pub fn get_rpi_port() -> Result<String> {
+    let ports = list_ports();
+    let result = ports.iter().find(|port| port.contains("cu.usbmodem"));
+    if let Some(port) = result {
+        Ok(port.to_string())
+    } else {
+        Err(anyhow::anyhow!("No RPi port found"))
     }
 }
 
