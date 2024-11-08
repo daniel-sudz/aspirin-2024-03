@@ -4,7 +4,7 @@ use super::{list_ports::get_rpi_port, send_receive::{configure_send_receive, sen
 use super::types::Port;
 
 /// A safe-rust wrapper for interacting with libserialport using C FFI bindings
-struct Serial {
+pub struct Serial {
     pub port: Port,
 }
 
