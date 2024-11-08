@@ -31,9 +31,6 @@ pub fn list_ports() -> Vec<Port> {
                     }
                     i += 1;
                 }
-
-                // Don't forget to free the port list when done
-                sp_free_port_list(port_list);
             }
             _ => {
                 println!("Error: {:?}", result);
@@ -48,6 +45,7 @@ pub fn get_rpi_port() -> Result<Port> {
     let ports = list_ports();
     let result = ports.into_iter().find(|port| port.name.contains("cu.usbmodem"));
     if let Some(port) = result {
+        println!("RPi port selected: {}", port.name);
         Ok(port)
     } else {
         Err(anyhow::anyhow!("No RPi port found"))
