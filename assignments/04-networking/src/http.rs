@@ -1,3 +1,5 @@
+use anyhow::Result;
+use regex::Regex;
 use std::{fmt::Display, str::FromStr};
 
 use crate::error::AspirinEatsError;
@@ -6,13 +8,13 @@ use crate::error::AspirinEatsError;
 #[derive(Debug)]
 pub struct HttpRequest {
     /// The HTTP method used in the request (GET, POST, etc)
-    pub method: Option<String>,
+    pub method: String,
 
     /// The path requested by the client
-    pub path: Option<String>,
+    pub path: String,
 
     /// The body of the request
-    pub body: Option<String>,
+    pub body: String,
 }
 
 impl FromStr for HttpRequest {
@@ -20,14 +22,47 @@ impl FromStr for HttpRequest {
 
     // Parse a string into an HTTP Request
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+        let regex_match = r"(\w+)\s+(\/[^\s]+)\s+HTTP\/\d\.\d(?:\r\n|\r|\n)(?:[^\r\n]+)(?:\r\n|\r|\n)(?:\r\n|\r|\n)(.*)";
+        let re = Regex::new(regex_match).unwrap();
+        let captures = re.captures(s);
+        match captures {
+            Some(captures) => {
+                let method = captures.get(1).unwrap().as_str().to_string();
+                let path = captures.get(2).unwrap().as_str().to_string();
+                let body = captures.get(3).unwrap().as_str().to_string();
+                Ok(HttpRequest { method, path, body })
+            }
+            None => Err("Invalid request".to_string()),
+        }
+    }
+}
+
+impl TryFrom<Vec<String>> for HttpRequest {
+    type Error = anyhow::Error;
+
+    fn try_from(lines: Vec<String>) -> Result<Self> {
+        let method_re = r"(\w+)\s+(\/[^\s]*)\s+HTTP\/\d\.\d.*";
+        let re = Regex::new(method_re).unwrap();
+
+        match re.captures(&lines[0]) {
+            Some(captures) => {
+                let method = captures.get(1).unwrap().as_str().to_string();
+                let path = captures.get(2).unwrap().as_str().to_string();
+                Ok(HttpRequest {
+                    method,
+                    path,
+                    body: lines[lines.len() - 1].clone(),
+                })
+            }
+            None => Err(anyhow::anyhow!("Invalid request")),
+        }
     }
 }
 
 pub struct HttpResponse {
-    status_code: u16,
-    status_text: String,
-    body: String,
+    pub status_code: u16,
+    pub status_text: String,
+    pub body: String,
 }
 
 impl HttpResponse {
@@ -39,18 +74,36 @@ impl HttpResponse {
         }
     }
 }
-
 impl Display for HttpResponse {
     /// Convert an HttpResponse struct to a valid HTTP Response
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        write!(
+            f,
+            "HTTP/1.1 {} {}\r\nContent-Length: {}\r\n\r\n{}",
+            self.status_code,
+            self.status_text,
+            self.body.len(),
+            self.body
+        )
     }
 }
 
 impl From<AspirinEatsError> for HttpResponse {
     /// Given an error type, convert it to an appropriate HTTP Response
     fn from(value: AspirinEatsError) -> Self {
-        todo!()
+        match value {
+            AspirinEatsError::InvalidRequest => {
+                HttpResponse::new(400, "Bad Request", "Invalid Request")
+            }
+            AspirinEatsError::NotFound => HttpResponse::new(404, "Not Found", "Resource not found"),
+            AspirinEatsError::MethodNotAllowed => {
+                HttpResponse::new(405, "Method Not Allowed", "Method not allowed")
+            }
+            AspirinEatsError::ParseError(_) => {
+                HttpResponse::new(400, "Bad Request", "Failed to parse request")
+            }
+            _ => HttpResponse::new(500, "Internal Server Error", "Internal Server Error"),
+        }
     }
 }
 
@@ -62,9 +115,9 @@ mod tests {
     fn test_http_request_from_str() {
         let request = "GET /orders HTTP/1.1\r\nHost: localhost:8080\r\n\r\nthis is the body.";
         let http_request = HttpRequest::from_str(request).unwrap();
-        assert_eq!(http_request.method, Some("GET".to_string()));
-        assert_eq!(http_request.path, Some("/orders".to_string()));
-        assert_eq!(http_request.body, Some("this is the body.".to_string()));
+        assert_eq!(http_request.method, "GET".to_string());
+        assert_eq!(http_request.path, "/orders".to_string());
+        assert_eq!(http_request.body, "this is the body.".to_string());
     }
 
     #[test]
@@ -72,7 +125,7 @@ mod tests {
         let response = HttpResponse::new(200, "OK", "Welcome to Aspirin Eats!");
         assert_eq!(
             response.to_string(),
-            "HTTP/1.1 200 OK\r\n\r\nWelcome to Aspirin Eats!"
+            "HTTP/1.1 200 OK\r\nContent-Length: 24\r\n\r\nWelcome to Aspirin Eats!"
         );
     }
 

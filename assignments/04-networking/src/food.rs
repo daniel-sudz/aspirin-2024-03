@@ -22,7 +22,7 @@ pub struct Order {
 
 /// Struct that represents an incoming order request to be added to the database. Separate from the
 /// Order struct because many of the fields will be generated for new orders
-#[derive(Deserialize, FromStrAsJson)]
+#[derive(Deserialize, Serialize, FromStrAsJson)]
 pub struct OrderRequest {
     /// Customer Name
     pub customer: String,
@@ -75,9 +75,9 @@ impl MenuItem {
 /// Struct that represents a burger
 #[derive(Serialize, Deserialize, DisplayAsJson, Debug, PartialEq, Clone)]
 pub struct Burger {
-    bun: Bun,
-    patty: Patty,
-    toppings: Vec<Topping>,
+    pub bun: Bun,
+    pub patty: Patty,
+    pub toppings: Vec<Topping>,
 }
 
 impl Burger {
