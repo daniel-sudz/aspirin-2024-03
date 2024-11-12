@@ -1,7 +1,10 @@
 use anyhow::Result;
 
-use super::{list_ports::get_rpi_port, send_receive::{configure_send_receive, send_receive}};
 use super::types::Port;
+use super::{
+    list_ports::get_rpi_port,
+    send_receive::{configure_send_receive, receive, send},
+};
 
 /// A safe-rust wrapper for interacting with libserialport using C FFI bindings
 pub struct Serial {
@@ -9,7 +12,6 @@ pub struct Serial {
 }
 
 impl Serial {
-
     /// Ceates a new Serial instance by automatically finding the RPi port
     pub fn from_auto_configure() -> Result<Self> {
         let port = get_rpi_port()?;
@@ -19,10 +21,13 @@ impl Serial {
 
     /// blocking sends a message to the serial port
     pub fn send(&self, message: String) -> Result<()> {
-        send_receive(&self.port, message)
+        send(&self.port, message)
+    }
+
+    pub fn receive(&self) -> Result<String> {
+        receive(&self.port)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
