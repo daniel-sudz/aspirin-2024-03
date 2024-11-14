@@ -51,7 +51,7 @@ pub fn send(port: &Port, data: String) -> Result<()> {
 }
 
 pub fn receive(port: &Port) -> Result<String> {
-    let mut buffer = [0u8; 1024];
+    let mut buffer = [0u8; 2];
 
     let bytes_read = unsafe {
         sp_blocking_read(
@@ -66,8 +66,7 @@ pub fn receive(port: &Port) -> Result<String> {
         Err(anyhow::anyhow!("Error reading data: {}", bytes_read))
     } else {
         let data = String::from_utf8_lossy(&buffer[..bytes_read as usize]);
-        println!("Received: {}", data);
-        Ok(data.to_string())
+        Ok(data.trim().to_string())
     }
 }
 
@@ -84,8 +83,8 @@ mod tests {
         // send(&port, "init controller".to_string()).unwrap();
         // send(&port, "set ready led".to_string()).unwrap();
         // send(&port, "clear all leds".to_string()).unwrap();
-        // send(&port, "start controller".to_string()).unwrap();
-        send(&port, "stop controller".to_string()).unwrap();
+        send(&port, "start controller".to_string()).unwrap();
+        // send(&port, "stop controller".to_string()).unwrap();
         // send(&port, "reset".to_string()).unwrap();
         // send(&port, "enable debug".to_string()).unwrap();
         // send(&port, "disable debug".to_string()).unwrap();

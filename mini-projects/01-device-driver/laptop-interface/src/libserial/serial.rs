@@ -38,4 +38,10 @@ mod tests {
         let serial = Serial::from_auto_configure().unwrap();
         serial.send("Hello, world!".to_string()).unwrap();
     }
+
+    #[test]
+    fn test_receive() {
+        let serial = Serial::from_auto_configure().unwrap();
+        let data = serial.receive().unwrap();
+    }
 }
