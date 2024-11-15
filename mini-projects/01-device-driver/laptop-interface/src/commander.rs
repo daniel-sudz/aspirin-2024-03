@@ -1,16 +1,42 @@
+use std::thread;
+use rayon::prelude::*;
 use anyhow::Result;
 use crate::libserial::serial::Serial;
 
-/// A commander struct that provides high-level commands for the laptop interface
+use crate::threads::BufferedBackgroundSerial;
+
 pub struct Commander {
-    serial: Serial,
+    serial: BufferedBackgroundSerial,
+    pos: (i32, i32),
 }
 
 impl Commander {
     pub fn new() -> Result<Self> {
         let serial = Serial::from_auto_configure()?;
-        Ok(Self { serial })
+        Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
     }
+
+    /// Updates the controller with the latest state
+    pub fn update(&mut self, message: String) {
+        // todo
+        println!("Updating controller with message: {}", message);
+    }
+
+    /// Checks for an update from the controller
+    pub fn check_update(&mut self) {
+        match self.serial.receive() {
+            Ok(data) => {
+                self.update(data);
+            }
+            Err(_) => {}
+        }
+    }
+
+    pub fn get_pos(&mut self) -> (i32, i32) {
+        self.check_update();
+        self.pos
+    }
+
 
     /// Transitions from DeviceState::PendingInit to DeviceState::PendingStart
     pub fn transition_to_pending_start(&self) -> Result<()> {

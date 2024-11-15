@@ -11,6 +11,9 @@ pub struct Serial {
     pub port: Port,
 }
 
+unsafe impl Sync for Serial {}
+unsafe impl Send for Serial {}
+
 impl Serial {
     /// Ceates a new Serial instance by automatically finding the RPi port
     pub fn from_auto_configure() -> Result<Self> {
