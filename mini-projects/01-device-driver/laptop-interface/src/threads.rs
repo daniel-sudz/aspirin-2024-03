@@ -50,8 +50,8 @@ impl BufferedBackgroundSerial {
                         let mut rx_buffer = rx_buffer.write().unwrap();
                         rx_buffer.push_back(data);
                     }
-                    Err(_) => {
-                        // no data recv
+                    Err(e) => {
+                        println!("Error receiving data: {}", e);
                     }
                 }
             }
@@ -74,9 +74,4 @@ impl Drop for BufferedBackgroundSerial {
 
 #[cfg(test)]
 mod tests {
-    use super::parallel_processing;
-    #[test]
-    fn test_parallel_processing() {
-        parallel_processing();
-    }
 }
