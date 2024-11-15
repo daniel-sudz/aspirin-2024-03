@@ -2,7 +2,7 @@ use anyhow::Result;
 use crate::libserial::serial::Serial;
 
 /// A commander struct that provides high-level commands for the laptop interface
-struct Commander {
+pub struct Commander {
     serial: Serial,
 }
 
@@ -50,5 +50,25 @@ impl Commander {
     /// Transitions from DeviceState::PendingStart to DeviceState::Running
     pub fn transition_to_running(&self) -> Result<()> {
         self.serial.send("stop controller".to_string())
+    }
+
+    /// Transitions from DeviceState::Running to DeviceState::Complete
+    pub fn transition_to_complete(&self) -> Result<()> {
+        self.serial.send("stop controller".to_string())
+    }
+
+    /// Transitions from DeviceState::Complete to DeviceState::PendingInit
+    pub fn transition_to_pending_init_from_complete(&self) -> Result<()> {
+        self.serial.send("reset".to_string())
+    }
+
+    /// Transitions from DeviceState::Complete to DeviceState::PendingStart
+    pub fn transition_to_pending_start_from_complete(&self) -> Result<()> {
+        self.serial.send("restart".to_string())
+    }
+
+    /// Transitions from DeviceState::Complete to DeviceState::Running
+    pub fn transition_to_running_from_complete(&self) -> Result<()> {
+        self.serial.send("start controller".to_string())
     }
 }
