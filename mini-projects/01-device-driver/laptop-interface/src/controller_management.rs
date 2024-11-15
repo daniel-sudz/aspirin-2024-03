@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(PartialEq)]
-enum DeviceState {
+pub enum DeviceState {
     PendingInit = 0,
     PendingStart = 1,
     Running = 2,
@@ -14,7 +14,7 @@ enum DeviceState {
 }
 
 #[derive(PartialEq)]
-enum ControllerInput {
+pub enum ControllerInput {
     Reset,
     Restart,
     StartController,

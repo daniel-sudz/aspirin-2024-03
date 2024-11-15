@@ -1,94 +1,75 @@
 use super::libserial::serial::Serial;
-use std::sync::mpsc;
+use std::collections::VecDeque;
+use std::sync::atomic::AtomicBool;
+use anyhow::Result;
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::{io, io::Write};
 
-pub fn parallel_processing() {
-    let (tx1, rx1) = mpsc::channel();
-    // let (tx2, rx2) = mpsc::channel();
 
-    // Controller 1 thread
-    let controller_one = thread::spawn(move || {
-        let port = Serial::from_auto_configure().expect("Failed to configure port");
-        println!("Serial port configured for controller one");
+pub struct BufferedBackgroundSerial {
+    serial: Arc<RwLock<Serial>>,
+    rx_buffer: Arc<RwLock<VecDeque<String>>>,
+    join_handle: Option<thread::JoinHandle<()>>,
+    enable: Arc<AtomicBool>,
+}
 
-        loop {
-            match port.receive() {
-                Ok(data) => {
-                    io::stdout().flush().expect("Failed to flush stdout");
-                    match tx1.send(data) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            eprintln!("Controller one failed to send data: {:?}", e);
-                            break;
-                        }
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error receiving data from controller one: {:?}", e);
-                }
-            }
-        }
-    });
+impl BufferedBackgroundSerial {
+    /// Writes a message to the tx_buffer
+    pub fn send(&self, message: String) -> Result<()> {
+        self.serial.write().unwrap().send(message)
+    }
 
-    // Controller 2 thread
-    // let controller_two = thread::spawn(move || {
-    //     let port = Serial::from_auto_configure().expect("Failed to configure port");
-    //     println!("Serial port configured for controller two");
+    pub fn receive(&self) -> Result<String> {
+        self.rx_buffer.write().unwrap().pop_front().ok_or(anyhow::anyhow!("No data to receive"))
+    }
 
-    //     loop {
-    //         match port.receive() {
-    //             Ok(data) => {
-    //                 io::stdout().flush().expect("Failed to flush stdout");
-    //                 match tx2.send(data) {
-    //                     Ok(_) => {}
-    //                     Err(e) => {
-    //                         eprintln!("Controller two failed to send data: {:?}", e);
-    //                         break;
-    //                     }
-    //                 }
-    //             }
-    //             Err(e) => {
-    //                 eprintln!("Error receiving data from controller two: {:?}", e);
-    //             }
-    //         }
-    //     }
-    // });
+    /// Creates a new BufferedBackgroundSerial instance from a Serial instance
+    pub fn from_serial(serial: Serial) -> Self {
+        let mut s = Self {
+            serial: Arc::new(RwLock::new(serial)),
+            rx_buffer: Arc::new(RwLock::new(VecDeque::new())),
+            enable: Arc::new(AtomicBool::new(true)),
+            join_handle: None,
+        };
 
-    // Receiver thread that processes all data from both controllers
-    let receive_thread = thread::spawn(move || {
-        println!("Receiver thread started");
-        loop {
-            match rx1.recv() {
-                Ok(data) => {
-                    println!("Controller one input: {}", data);
-                }
-                Err(e) => {
-                    eprintln!("Receiver thread encountered channel error: {:?}", e);
+        let serial = s.serial.clone(); 
+        let rx_buffer = s.rx_buffer.clone();
+        let enable = s.enable.clone();
+        let join_handle = unsafe {
+            thread::Builder::new().name("buffered_background_serial".to_string()).spawn_unchecked(move || {
+            loop {
+                // exit thread if enable is false
+                if !enable.load(std::sync::atomic::Ordering::Relaxed) {
                     break;
                 }
+                // check to see if we have something to receive
+                let received_data = serial.read().unwrap().receive();
+                match received_data {
+                    Ok(data) => {
+                        let mut rx_buffer = rx_buffer.write().unwrap();
+                        rx_buffer.push_back(data);
+                    }
+                    Err(_) => {
+                        // no data recv
+                    }
+                }
             }
+            })
+            .unwrap()
+        };
+        s.join_handle = Some(join_handle);
+        s
+    }
+}
 
-            // match rx2.recv() {
-            //     Ok(data) => {
-            //         println!("Controller two input: {}", data);
-            //     }
-            //     Err(e) => {
-            //         eprintln!("Receiver thread encountered channel error: {:?}", e);
-            //         break;
-            //     }
-            // }
+impl Drop for BufferedBackgroundSerial {
+    fn drop(&mut self) {
+        self.enable.store(false, std::sync::atomic::Ordering::Relaxed);
+        if let Some(handle) = self.join_handle.take() {
+            handle.join().unwrap();
         }
-    });
-
-    // Wait for all threads to finish
-    controller_one
-        .join()
-        .expect("Controller one thread panicked");
-    // controller_two
-    //     .join()
-    //     .expect("Controller two thread panicked");
-    receive_thread.join().expect("Receiver thread panicked");
+    }
 }
 
 #[cfg(test)]
