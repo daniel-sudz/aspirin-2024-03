@@ -60,6 +60,7 @@ extern "C" {
     pub fn sp_set_flowcontrol(port: *mut sp_port, flowcontrol: SpFlowControl) -> SpReturn;
     pub fn sp_blocking_write(port: *mut sp_port, buf: *const c_void, count: usize, timeout_ms: c_int) -> SpReturn;
     pub fn sp_blocking_read(port: *mut sp_port, buf: *mut c_void, count: usize, timeout_ms: c_int) -> SpReturn;
+    pub fn sp_blocking_read_next(port: *mut sp_port, buf: *mut c_void, count: usize, timeout_ms: c_int) -> SpReturn;
     pub fn sp_last_error_message() -> *mut c_char;
     pub fn sp_free_error_message(message: *mut c_char);
     pub fn sp_drain(port: *mut sp_port) -> SpReturn;
