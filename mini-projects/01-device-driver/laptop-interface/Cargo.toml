@@ -5,7 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.93"
+eframe = "0.29.1"
+egui = "0.29.1"
 libc = "0.2.161"
+termion = "4.0.3"
 
 [build-dependencies]
 cc = "1.0"
