@@ -111,6 +111,7 @@ mod tests {
     #[test]
     fn test_commander() {
         let mut commander = Commander::new().unwrap();
+        commander.set_debug_mode().unwrap();
         commander.transition_to_pending_start().unwrap();
         commander.set_ready_led().unwrap();
         commander.set_all_leds().unwrap();
@@ -126,5 +127,6 @@ mod tests {
 
         commander.transition_to_complete().unwrap();
         commander.transition_to_pending_init_from_complete().unwrap();
+        commander.set_go_led().unwrap();
     }
 }
