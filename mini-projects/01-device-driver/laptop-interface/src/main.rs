@@ -12,7 +12,7 @@ fn main() -> Result<(), eframe::Error> {
         "Mini Project 1",
         NativeOptions::default(),
         Box::new(|_cc| Ok(Box::new(GameApp::default()))),
-    );
+    )?;
 
     Ok(())
 }

@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui::{Frame, Margin};
 
 #[derive(PartialEq)]
 enum DeviceState {
@@ -59,40 +60,46 @@ impl eframe::App for GameApp {
 }
 
 fn display_welcome(ui: &mut egui::Ui) {
-    ui.centered_and_justified(|ui| {
-        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.add(egui::Label::new(
-                egui::RichText::new("Welcome").size(40.0).strong(),
-            ));
-            ui.add(egui::Label::new(
-                egui::RichText::new("Initializing controller 0 and 1...")
-                    .size(20.0)
-                    .italics(),
-            ));
+    Frame::default()
+        .inner_margin(Margin::same(225.0))
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Welcome").size(60.0).strong(),
+                ));
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Initializing controller 0 and 1...")
+                        .size(20.0)
+                        .italics(),
+                ));
+            })
         });
-    });
 }
 
 fn display_starting(ui: &mut egui::Ui) {
-    ui.centered_and_justified(|ui| {
-        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.add(egui::Label::new(
-                egui::RichText::new("Welcome").size(40.0).strong(),
-            ));
-            ui.add(egui::Label::new(
-                egui::RichText::new("Initialized controller 0 and 1...")
-                    .size(20.0)
-                    .italics(),
-            ));
-            ui.add_space(20.0);
-            ui.add(egui::Label::new(
-                egui::RichText::new("Press Enter to start")
-                    .size(20.0)
-                    .strong()
-                    .italics(),
-            ));
+    Frame::default()
+        .inner_margin(Margin::same(225.0))
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Welcome").size(60.0).strong(),
+                ));
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Initialized controller 0 and 1...")
+                        .size(20.0)
+                        .italics(),
+                ));
+            });
+            ui.add_space(200.0);
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Press Enter to start")
+                        .size(20.0)
+                        .strong()
+                        .italics(),
+                ));
+            });
         });
-    });
 }
 
 fn display_running(
@@ -100,52 +107,73 @@ fn display_running(
     controller_one_pos: (i32, i32),
     controller_two_pos: (i32, i32),
 ) {
-    ui.vertical_centered(|ui| {
-        egui::Grid::new("controllers_grid")
-            .num_columns(2)
-            .spacing([50.0, 50.0])
-            .show(ui, |ui| {
-                ui.add(egui::Label::new(
-                    egui::RichText::new("Controller 0").size(40.0).strong(),
-                ));
-                ui.add(egui::Label::new(
-                    egui::RichText::new("Controller 1").size(40.0).strong(),
-                ));
-                ui.end_row();
+    Frame::default()
+        .inner_margin(Margin::same(60.0))
+        .show(ui, |ui| {
+            egui::Grid::new("controllers_grid")
+                .num_columns(2)
+                .spacing([0.0, 100.0])
+                .show(ui, |ui| {
+                    ui.add(egui::Label::new(
+                        egui::RichText::new("Controller 0").size(40.0).strong(),
+                    ));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.add(egui::Label::new(
+                            egui::RichText::new("Controller 1").size(40.0).strong(),
+                        ));
+                    });
+                    ui.end_row();
 
+                    ui.add(egui::Label::new(
+                        egui::RichText::new(format!("{:?}", controller_one_pos)).size(40.0),
+                    ));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.add(egui::Label::new(
+                            egui::RichText::new(format!("{:?}", controller_two_pos)).size(40.0),
+                        ));
+
+                        ui.end_row();
+                    });
+                });
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 ui.add(egui::Label::new(
-                    egui::RichText::new(format!("{:?}", controller_one_pos)).size(40.0),
+                    egui::RichText::new("Press Space to stop")
+                        .size(20.0)
+                        .strong()
+                        .italics(),
                 ));
-                ui.add(egui::Label::new(
-                    egui::RichText::new(format!("{:?}", controller_two_pos)).size(40.0),
-                ));
-                ui.end_row();
             });
-    });
+        });
 }
 
 fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
-    ui.centered_and_justified(|ui| {
-        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.add(egui::Label::new(
-                egui::RichText::new("Game complete").size(40.0).strong(),
-            ));
-            ui.add(egui::Label::new(
-                egui::RichText::new(format!("The winner is {:?}", *winner)).size(20.0),
-            ));
-            ui.add_space(20.0);
-            ui.add(egui::Label::new(
-                egui::RichText::new("Press Enter to restart")
-                    .size(20.0)
-                    .strong()
-                    .italics(),
-            ));
-            ui.add(egui::Label::new(
-                egui::RichText::new("Press Space to reset")
-                    .size(20.0)
-                    .strong()
-                    .italics(),
-            ));
+    Frame::default()
+        .inner_margin(Margin::same(225.0))
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Congrats!").size(60.0).strong(),
+                ));
+                ui.add(egui::Label::new(
+                    egui::RichText::new(format!("The winner is {:?}", *winner))
+                        .size(20.0)
+                        .italics(),
+                ));
+            });
+            ui.add_space(200.0);
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Press Enter to restart")
+                        .size(20.0)
+                        .strong()
+                        .italics(),
+                ));
+                ui.add(egui::Label::new(
+                    egui::RichText::new("Press Space to reset")
+                        .size(20.0)
+                        .strong()
+                        .italics(),
+                ));
+            });
         });
-    });
 }
