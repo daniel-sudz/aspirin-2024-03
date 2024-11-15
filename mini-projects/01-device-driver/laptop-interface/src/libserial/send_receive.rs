@@ -53,23 +53,36 @@ pub fn send(port: &Port, data: String) -> Result<()> {
 
 pub fn receive(port: &Port) -> Result<String> {
     let mut buffer = [0u8; 1024];
+    let mut buffer_idx = 0;
 
-    let bytes_read = unsafe {
-        sp_blocking_read(
-            port.handle,
-            buffer.as_mut_ptr() as *mut c_void,
-            1,
-            100,
-        ) as i32
-    };
-
-    if bytes_read < 0 {
-        Err(anyhow::anyhow!("Error reading data: {}", bytes_read))
-    } else {
-        println!("Read {} bytes", bytes_read);
-        let data = String::from_utf8_lossy(&buffer[..bytes_read as usize]);
-        Ok(data.trim().to_string())
-    }
+    loop {
+        let bytes_read = unsafe {
+            sp_blocking_read(
+                port.handle,
+                buffer.as_mut_ptr().add(buffer_idx) as *mut c_void,
+                1,
+                100,
+            ) as i32
+        };
+        match bytes_read {
+            0 => {
+                break;
+            }
+            _ => {
+                buffer_idx += 1;
+                // check for newline break
+                match buffer[buffer_idx - 1] {
+                    10 => {
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+  }
+  let result = String::from_utf8_lossy(&buffer[..buffer_idx]).trim().to_string();
+  println!("total read: {} result: {}", buffer_idx, result);
+  Ok(result)
 }
 
 mod tests {
