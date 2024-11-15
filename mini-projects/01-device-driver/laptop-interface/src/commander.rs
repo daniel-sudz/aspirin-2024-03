@@ -19,7 +19,7 @@ impl Commander {
     /// Updates the controller with the latest state
     pub fn update(&mut self, message: String) {
         // todo
-        println!("Updating controller with message: {}", message);
+        //println!("Updating controller with message: {}", message);
     }
 
     /// Checks for an update from the controller
@@ -96,5 +96,35 @@ impl Commander {
     /// Transitions from DeviceState::Complete to DeviceState::Running
     pub fn transition_to_running_from_complete(&self) -> Result<()> {
         self.serial.send("start controller".to_string())
+    }
+
+    /// Turns on debug mode
+    pub fn set_debug_mode(&self) -> Result<()> {
+        self.serial.send("enable debug".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_commander() {
+        let mut commander = Commander::new().unwrap();
+        commander.transition_to_pending_start().unwrap();
+        commander.set_ready_led().unwrap();
+        commander.set_all_leds().unwrap();
+
+        commander.transition_to_running().unwrap();
+
+        for _ in 0..100 {
+            //println!("Checking for update");
+            let pos = commander.get_pos();
+            //println!("Pos: {:?}", pos);
+            thread::sleep(std::time::Duration::from_millis(100));
+        }
+
+        commander.transition_to_complete().unwrap();
+        commander.transition_to_pending_init_from_complete().unwrap();
     }
 }

@@ -5,7 +5,7 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
 
 use crate::libserial::ffi::{
-    sp_blocking_read, sp_blocking_write, sp_open, sp_set_baudrate, sp_set_bits, sp_set_flowcontrol,
+    sp_blocking_read, sp_blocking_write, sp_drain, sp_open, sp_set_baudrate, sp_set_bits, sp_set_flowcontrol,
     sp_set_parity, sp_set_stopbits, SpFlowControl, SpMode, SpParity,
 };
 
@@ -45,26 +45,28 @@ pub fn send(port: &Port, data: String) -> Result<()> {
     if bytes_written < 0 {
         Err(anyhow::anyhow!("Error sending data: {}", bytes_written))
     } else {
+        let _ = unsafe { check(sp_drain(port.handle)) }?;
         println!("Sent {} bytes", bytes_written);
         Ok(())
     }
 }
 
 pub fn receive(port: &Port) -> Result<String> {
-    let mut buffer = [0u8; 2];
+    let mut buffer = [0u8; 1024];
 
     let bytes_read = unsafe {
         sp_blocking_read(
             port.handle,
             buffer.as_mut_ptr() as *mut c_void,
             buffer.len(),
-            10000,
+            20,
         ) as i32
     };
 
     if bytes_read < 0 {
         Err(anyhow::anyhow!("Error reading data: {}", bytes_read))
     } else {
+        println!("Read {} bytes", bytes_read);
         let data = String::from_utf8_lossy(&buffer[..bytes_read as usize]);
         Ok(data.trim().to_string())
     }
