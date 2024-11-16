@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_commander() {
-        let mut commander = Commander::new().unwrap();
+        let mut commander = Commander::from_auto_configure().unwrap();
         commander.set_debug_mode_off().unwrap();
         commander.transition_to_pending_start().unwrap();
         commander.set_ready_led().unwrap();

@@ -98,9 +98,10 @@ impl Device {
 impl MultiDevice {
     pub fn from_auto_configure(num_devices: usize) -> Result<Self> {
         let ports = get_all_rpi_ports();
-        let devices = match ports.len() == num_devices {
-            true => ports.into_iter().map(|port| Device::from_port(port)).collect(),
-            false => Err(anyhow::anyhow!("Not enough devices found"))
+        let devices = match ports.len().cmp(&num_devices) {
+            std::cmp::Ordering::Equal => ports.into_iter().map(|port| Device::from_port(port)).collect(),
+            std::cmp::Ordering::Less => Err(anyhow::anyhow!("Not enough devices found - need {}, found {}", num_devices, ports.len())),
+            std::cmp::Ordering::Greater => Err(anyhow::anyhow!("Too many devices found - need {}, found {}", num_devices, ports.len()))
         }?;
         Ok(Self { devices })
     }
@@ -116,4 +117,14 @@ impl MultiDevice {
         self.devices.iter_mut().map(|device| device.commander.get_pos()).collect()
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_multi_device() {
+        let multi_device = MultiDevice::from_auto_configure(2).unwrap();
+    }
 }
