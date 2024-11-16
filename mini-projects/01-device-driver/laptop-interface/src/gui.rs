@@ -1,38 +1,83 @@
 use eframe::egui;
 use egui::{Frame, Margin};
 
-#[derive(PartialEq)]
-enum DeviceState {
-    PendingInit = 0,
-    PendingStart = 1,
-    Running = 2,
-    Complete = 3,
-}
+use crate::controller_management::{DeviceState, MultiDevice};
+
 
 pub struct GameApp {
-    controller_one_pos: (i32, i32),
-    controller_two_pos: (i32, i32),
-    state: DeviceState,
+    device_manager: Option<MultiDevice>,
     winner: Option<String>,
 }
+
 
 impl Default for GameApp {
     fn default() -> Self {
         Self {
-            controller_one_pos: (0, 0),
-            controller_two_pos: (0, 0),
-            state: DeviceState::PendingInit,
+            device_manager: None,
             winner: None,
         }
     }
 }
+
+impl GameApp {
+    pub fn get_state(&self) -> DeviceState {
+        self.device_manager.as_ref().unwrap().get_state()
+    }
+    pub fn get_pos_player_one(&self) -> (i32, i32) {
+        self.device_manager.as_ref().unwrap().get_pos()[0]
+    }
+    pub fn get_pos_player_two(&self) -> (i32, i32) {
+        self.device_manager.as_ref().unwrap().get_pos()[1]
+    }
+}
+
+
 impl eframe::App for GameApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| match self.state {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            match &mut self.device_manager {
+                // device manager not yet initialized
+                None => {
+                    match MultiDevice::from_auto_configure(2) {
+                        Ok(device_manager) => {
+                            self.device_manager = Some(device_manager);
+                        }
+                        Err(e) => {
+                            display_welcome(ui, &e.to_string());
+                        }
+                    }
+                }
+                // device manager initialized
+                Some(device_manager) => {
+                    match device_manager.get_state() {
+                        DeviceState::PendingInit => {
+                            //display_welcome(ui, &"Initializing controller 0 and 1...");
+                        }
+                        DeviceState::PendingStart => {
+                            display_starting(ui);
+                        }
+                        DeviceState::Running => {
+                            display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
+                        }
+                        DeviceState::Complete => {
+                            display_complete(ui, &self.winner);
+                        }
+                    }
+
+                }
+            }
+        });
+
+           /*  
+            
+            match self.get_state() {
             DeviceState::PendingInit => {
                 display_welcome(ui);
-                if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
-                    self.state = DeviceState::PendingStart;
+                match MultiDevice::from_auto_configure(2) {
+                    Ok(device_manager) => self.device_manager = Some(device_manager),
+                    Err(e) => {
+                        eprintln!("Error initializing devices: {}", e);
+                    }
                 }
             }
             DeviceState::PendingStart => {
@@ -56,10 +101,11 @@ impl eframe::App for GameApp {
                 }
             }
         });
+         */
     }
 }
 
-fn display_welcome(ui: &mut egui::Ui) {
+fn display_welcome(ui: &mut egui::Ui, intialization_text: &str) {
     Frame::default()
         .inner_margin(Margin::same(225.0))
         .show(ui, |ui| {
@@ -68,7 +114,7 @@ fn display_welcome(ui: &mut egui::Ui) {
                     egui::RichText::new("Welcome").size(60.0).strong(),
                 ));
                 ui.add(egui::Label::new(
-                    egui::RichText::new("Initializing controller 0 and 1...")
+                    egui::RichText::new(intialization_text)
                         .size(20.0)
                         .italics(),
                 ));

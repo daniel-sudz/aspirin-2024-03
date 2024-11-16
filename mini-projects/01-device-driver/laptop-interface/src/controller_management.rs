@@ -7,7 +7,7 @@ use anyhow::Result;
 use std::thread;
 use std::time::Duration;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum DeviceState {
     PendingInit = 0,
     PendingStart = 1,
@@ -113,8 +113,13 @@ impl MultiDevice {
         Ok(())
     }
 
-    pub fn get_pos(&mut self) -> Vec<(i32, i32)> {
-        self.devices.iter_mut().map(|device| device.commander.get_pos()).collect()
+    pub fn get_pos(&self) -> Vec<(i32, i32)> {
+        self.devices.iter().map(|device| device.commander.get_pos()).collect()
+    }
+
+    /// Since all devices have the same state this returns the state of the first device
+    pub fn get_state(&self) -> DeviceState {
+        self.devices[0].state.clone()
     }
 
 }
@@ -127,4 +132,5 @@ mod tests {
     fn test_multi_device() {
         let multi_device = MultiDevice::from_auto_configure(2).unwrap();
     }
+
 }

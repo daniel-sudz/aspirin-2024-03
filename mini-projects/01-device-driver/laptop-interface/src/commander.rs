@@ -21,7 +21,7 @@ impl Commander {
         Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
     }
 
-    pub fn get_pos(&mut self) -> (i32, i32) {
+    pub fn get_pos(&self) -> (i32, i32) {
         self.serial.get_pos()
     }
 
