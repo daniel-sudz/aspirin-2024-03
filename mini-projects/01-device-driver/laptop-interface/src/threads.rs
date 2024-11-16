@@ -89,8 +89,8 @@ impl BufferedBackgroundSerial {
         let serial = s.serial.clone(); 
         let enable = s.enable.clone();
         let pos = s.pos.clone();
-        let join_handle = unsafe {
-            thread::Builder::new().name("buffered_background_serial".to_string()).spawn_unchecked(move || {
+        let join_handle = {
+            thread::Builder::new().name("buffered_background_serial".to_string()).spawn(move || {
                 let mut last_states = ButtonStates {
                     top_left: false,
                     top_right: false,
@@ -116,13 +116,12 @@ impl BufferedBackgroundSerial {
                         }
                     }
                     Err(e) => {
-                            println!("Error receiving data: {}", e);
+                        println!("Error receiving data: {}", e);
                         }
                     }
                 }
             })
-            .unwrap()
-        };
+        }.unwrap();
         s.join_handle = Some(join_handle);
         s
     }
