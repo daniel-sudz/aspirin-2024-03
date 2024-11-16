@@ -52,6 +52,11 @@ pub fn get_rpi_port() -> Result<Port> {
     }
 }
 
+pub fn get_all_rpi_ports() -> Vec<Port> {
+    let ports = list_ports();
+    ports.into_iter().filter(|port| port.name.contains("cu.usbmodem")).collect()
+}
+
 
 #[cfg(test)]
 mod tests {

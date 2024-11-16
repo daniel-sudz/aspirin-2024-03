@@ -21,6 +21,11 @@ impl Serial {
         configure_send_receive(&port)?;
         Ok(Self { port })
     }
+    /// Create a new Serial instance from a specific port
+    pub fn from_port(port: Port) -> Result<Self> {
+        configure_send_receive(&port)?;
+        Ok(Self { port })
+    }
 
     /// blocking sends a message to the serial port
     pub fn send(&self, message: String) -> Result<()> {

@@ -3,6 +3,7 @@ use rayon::prelude::*;
 use anyhow::Result;
 use crate::libserial::serial::Serial;
 
+use crate::libserial::types::Port;
 use crate::threads::BufferedBackgroundSerial;
 
 pub struct Commander {
@@ -11,8 +12,12 @@ pub struct Commander {
 }
 
 impl Commander {
-    pub fn new() -> Result<Self> {
+    pub fn from_auto_configure() -> Result<Self> {
         let serial = Serial::from_auto_configure()?;
+        Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
+    }
+    pub fn from_port(port: Port) -> Result<Self> {
+        let serial = Serial::from_port(port)?;
         Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
     }
 
