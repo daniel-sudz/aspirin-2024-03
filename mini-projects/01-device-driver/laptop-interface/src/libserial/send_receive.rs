@@ -61,7 +61,7 @@ pub fn receive(port: &Port) -> Result<String> {
                 port.handle,
                 buffer.as_mut_ptr().add(buffer_idx) as *mut c_void,
                 1,
-                100,
+                5,
             ) as i32
         };
         match bytes_read {
@@ -69,19 +69,20 @@ pub fn receive(port: &Port) -> Result<String> {
                 break;
             }
             _ => {
-                buffer_idx += 1;
                 // check for newline break
-                match buffer[buffer_idx - 1] {
+                match buffer[buffer_idx] {
                     10 => {
                         break;
                     }
-                    _ => {}
+                    _ => {
+                        buffer_idx += 1;
+                    }
                 }
             }
         }
   }
   let result = String::from_utf8_lossy(&buffer[..buffer_idx]).trim().to_string();
-  println!("total read: {} result: {}", buffer_idx, result);
+  //println!("total read: {} result: {}", buffer_idx, result);
   Ok(result)
 }
 
