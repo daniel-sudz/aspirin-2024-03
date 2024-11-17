@@ -4,7 +4,7 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::entry;
+use rp_pico::{entry, hal::gpio};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -18,6 +18,7 @@ use rp_pico::hal::pac;
 // higher-level drivers.
 use embedded_hal::digital::{InputPin, OutputPin, PinState};
 use rp_pico::hal;
+use rp_pico::hal::gpio::Interrupt::EdgeLow;
 use rp_pico::hal::Sio;
 use rp_pico::Pins;
 
@@ -28,6 +29,9 @@ use usbd_serial::SerialPort;
 // Misc
 use core::fmt::Write;
 use heapless::String;
+use core::cell::RefCell;
+use critical_section::Mutex;
+
 
 // Enum for Device State Machine
 #[repr(i32)]
@@ -42,6 +46,21 @@ enum DeviceState {
 // Heartbeat LED Delay
 const LED_TOGGLE_DELAY: u64 = 500_000;
 const SERIAL_TX_PERIOD: u64 = 100_000;
+
+
+// Type our button pins
+type LeftButtonType = gpio::Pin<gpio::bank0::Gpio13, gpio::FunctionSioInput, gpio::PullDown>;
+type TopButtonType = gpio::Pin<gpio::bank0::Gpio15, gpio::FunctionSioInput, gpio::PullDown>;
+type BottomButtonType = gpio::Pin<gpio::bank0::Gpio14, gpio::FunctionSioInput, gpio::PullDown>;
+type RightButtonType = gpio::Pin<gpio::bank0::Gpio12, gpio::FunctionSioInput, gpio::PullDown>;
+struct ButtonPins {
+    left: LeftButtonType,
+    top: TopButtonType,
+    bottom: BottomButtonType,
+    right: RightButtonType,
+}
+static GLOBAL_GPIO: Mutex<RefCell<Option<ButtonPins>>> = Mutex::new(RefCell::new(None));
+
 
 /// Entry point to our bare-metal application.
 ///
@@ -67,14 +86,27 @@ fn main() -> ! {
     let mut yellow_led = pins.gpio17.into_push_pull_output();
     let mut green_led = pins.gpio16.into_push_pull_output();
 
-    // Buttons
-    let mut left_button = pins.gpio13.into_pull_down_input();
-    let mut top_button = pins.gpio15.into_pull_down_input();
-    let mut bottom_button = pins.gpio14.into_pull_down_input();
-    let mut right_button = pins.gpio12.into_pull_down_input();
+    // Define buttons
+    let mut left_button: LeftButtonType = pins.gpio13.into_pull_down_input();
+    let mut top_button: TopButtonType = pins.gpio15.into_pull_down_input();
+    let mut bottom_button: BottomButtonType = pins.gpio14.into_pull_down_input();
+    let mut right_button: RightButtonType = pins.gpio12.into_pull_down_input();
 
+    // Enable interrupts on the buttons
+    left_button.set_interrupt_enabled(EdgeLow, true);
+    top_button.set_interrupt_enabled(EdgeLow, true);
+    bottom_button.set_interrupt_enabled(EdgeLow, true);
+    right_button.set_interrupt_enabled(EdgeLow, true);
+
+    // Give away ownership fo the buttons
+    let button_pins = ButtonPins { left: left_button, top: top_button, bottom: bottom_button, right: right_button };
+    critical_section::with(|cs| {
+        GLOBAL_GPIO.borrow(cs).replace(Some(button_pins));
+    });
+    
     // Set up the watchdog driver - needed by the clock setup code
     let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
+
 
     // Configure the clocks
     //
