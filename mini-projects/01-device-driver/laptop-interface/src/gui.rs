@@ -1,11 +1,10 @@
 use eframe::egui;
 use egui::{Frame, Margin};
-
-use crate::controller_management::{DeviceState, MultiDevice};
+use crate::controller_management::{BackgroundMultiDevice, ControllerInput, DeviceState, MultiDevice};
 
 
 pub struct GameApp {
-    device_manager: Option<MultiDevice>,
+    device_manager: Option<BackgroundMultiDevice>,
     winner: Option<String>,
 }
 
@@ -27,8 +26,11 @@ impl GameApp {
         self.device_manager.as_ref().unwrap().get_pos()[0]
     }
     pub fn get_pos_player_two(&self) -> (i32, i32) {
-        self.device_manager.as_ref().unwrap().get_pos()[1]
+        self.device_manager.as_ref().unwrap().get_pos()[1]  
     }
+    pub fn set_controller_input(&mut self, controller_input: Option<ControllerInput>) {
+        self.device_manager.as_mut().unwrap().set_controller_input(controller_input);
+    }   
 }
 
 
@@ -38,7 +40,7 @@ impl eframe::App for GameApp {
             match &mut self.device_manager {
                 // device manager not yet initialized
                 None => {
-                    match MultiDevice::from_auto_configure(2) {
+                    match BackgroundMultiDevice::from_auto_configure(2) {
                         Ok(device_manager) => {
                             self.device_manager = Some(device_manager);
                         }
@@ -51,22 +53,31 @@ impl eframe::App for GameApp {
                 Some(device_manager) => {
                     match device_manager.get_state() {
                         DeviceState::PendingInit => {
-                            //display_welcome(ui, &"Initializing controller 0 and 1...");
+                            display_welcome(ui, &"Initialized Controllers");
+                            self.device_manager.as_mut().unwrap().set_controller_input(None);   
                         }
                         DeviceState::PendingStart => {
                             display_starting(ui);
+                            if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
+                                self.set_controller_input(Some(ControllerInput::StartController));
+                            }
+                            else {
+                                self.set_controller_input(None);
+                            }
                         }
                         DeviceState::Running => {
                             display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
+                            self.device_manager.as_mut().unwrap().set_controller_input(None);
                         }
                         DeviceState::Complete => {
                             display_complete(ui, &self.winner);
+                            self.device_manager.as_mut().unwrap().set_controller_input(None);
                         }
                     }
-
                 }
             }
         });
+        ctx.request_repaint(); // Request repaint every frame
 
            /*  
             

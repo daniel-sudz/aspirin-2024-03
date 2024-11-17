@@ -11,6 +11,8 @@ pub struct Commander {
     pos: (i32, i32),
 }
 
+unsafe impl Send for Commander {}
+
 impl Commander {
     pub fn from_auto_configure() -> Result<Self> {
         let serial = Serial::from_auto_configure()?;
@@ -23,6 +25,15 @@ impl Commander {
 
     pub fn get_pos(&self) -> (i32, i32) {
         self.serial.get_pos()
+    }
+
+    pub fn run_on_all_commanders(commanders: &mut Vec<Commander>, f: impl Fn(&mut Commander) -> Result<()> + Send + std::marker::Copy) -> Result<()> {
+        thread::scope(move |s| {
+            for commander in commanders {
+                s.spawn(move || f(commander));
+            }
+        });
+        Ok(())
     }
 
 

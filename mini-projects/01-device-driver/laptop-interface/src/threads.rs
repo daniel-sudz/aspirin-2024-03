@@ -22,7 +22,6 @@ pub struct ButtonStates {
     bottom_right: bool,
 }
 
-
 impl BufferedBackgroundSerial {
     /// Writes a message to the tx_buffer
     pub fn send(&self, message: String) -> Result<()> {
