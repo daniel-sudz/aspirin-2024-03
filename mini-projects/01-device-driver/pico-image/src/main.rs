@@ -4,7 +4,7 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::{entry, hal::gpio};
+use rp_pico::{entry, hal::gpio, pac::Interrupt};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -13,6 +13,7 @@ use panic_halt as _;
 // A shorter alias for the Peripheral Access Crate, which provides low-level
 // register access
 use rp_pico::hal::pac;
+use rp_pico::hal::pac::interrupt;
 
 // A shorter alias for the Hardware Abstraction Layer, which provides
 // higher-level drivers.
@@ -27,7 +28,7 @@ use usb_device::{class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
 
 // Misc
-use core::fmt::Write;
+use core::{borrow::BorrowMut, fmt::Write};
 use heapless::String;
 use core::cell::RefCell;
 use critical_section::Mutex;
@@ -61,6 +62,8 @@ struct ButtonPins {
 }
 static GLOBAL_GPIO: Mutex<RefCell<Option<ButtonPins>>> = Mutex::new(RefCell::new(None));
 
+// Global state for the position of the player
+static GLOBAL_PLAYER_POSITION: Mutex<RefCell<(i32, i32)>> = Mutex::new(RefCell::new((0, 0)));
 
 /// Entry point to our bare-metal application.
 ///
@@ -323,3 +326,45 @@ fn main() -> ! {
 }
 
 // End of file
+
+
+#[allow(static_mut_refs)]
+#[interrupt]
+fn IO_IRQ_BANK0() {
+    static mut GPIO_STATE: Option<ButtonPins> = None;
+
+    // Lazily take ownership of the global GPIO state 
+    if GPIO_STATE.is_none() {
+        *GPIO_STATE = critical_section::with(|cs| {
+            GLOBAL_GPIO.borrow(cs).take()
+        });
+    }
+
+    // Check buttons states and update player position
+    critical_section::with(|cs| {
+        let mut player_position = GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
+        if let Some(gpios) = GPIO_STATE {
+            if gpios.left.interrupt_status(EdgeLow) {
+                player_position.0 -= 1;
+                player_position.1 += 1;
+                gpios.left.clear_interrupt(EdgeLow);
+            }
+            if gpios.top.interrupt_status(EdgeLow) {
+                player_position.0 -= 1;
+                player_position.1 -= 1;
+                gpios.top.clear_interrupt(EdgeLow);
+            }
+            if gpios.right.interrupt_status(EdgeLow) {
+                player_position.0 += 1;
+                player_position.1 -= 1;
+                gpios.right.clear_interrupt(EdgeLow);
+            }
+            if gpios.bottom.interrupt_status(EdgeLow) {
+                player_position.0 += 1;
+                player_position.1 += 1;
+                gpios.bottom.clear_interrupt(EdgeLow);
+            }
+        }
+    });
+}
+
