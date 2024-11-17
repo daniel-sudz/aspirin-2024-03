@@ -77,6 +77,7 @@ impl eframe::App for GameApp {
                             }
                         }
                         DeviceState::Complete => {
+                            self.winner = Some(calculate_winner(self.get_pos_player_one(), self.get_pos_player_two()));
                             display_complete(ui, &self.winner);
                             if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
                                 self.set_controller_input(Some(ControllerInput::RestartGame));
@@ -223,8 +224,14 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
                 ui.add(egui::Label::new(
                     egui::RichText::new("Congrats!").size(60.0).strong(),
                 ));
+
+                let winner = match winner {
+                    Some(winner) => winner,
+                    None => &"Draw".to_string(),
+                };
+
                 ui.add(egui::Label::new(
-                    egui::RichText::new(format!("The winner is {:?}", *winner))
+                    egui::RichText::new(format!("The winner is {}", *winner))
                         .size(20.0)
                         .italics(),
                 ));
@@ -245,4 +252,19 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
                 ));
             });
         });
+}
+
+fn calculate_winner(controller_one_pos: (i32, i32), controller_two_pos: (i32, i32)) -> String {
+    println!("{:?}", controller_one_pos);
+    println!("{:?}", controller_two_pos);
+    let pos_one = ((controller_one_pos.0.pow(2) + controller_one_pos.1.pow(2)) as f64).sqrt();
+    let pos_two = ((controller_two_pos.0.pow(2) + controller_two_pos.1.pow(2)) as f64).sqrt();
+    println!("One: {}, Two: {}", pos_one, pos_two);
+    if pos_one > pos_two {
+        "Controller 0".to_string()
+    } else if pos_one < pos_two {
+        "Controller 1".to_string()
+    } else {
+        "Draw".to_string()
+    }
 }
