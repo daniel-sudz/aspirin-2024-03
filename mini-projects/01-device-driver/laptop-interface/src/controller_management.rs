@@ -5,7 +5,8 @@ use crate::libserial::types::Port;
 use super::libserial::serial::Serial;
 use anyhow::Result;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use parking_lot::RwLock;
 use std::thread;
 use std::time::Duration;
 
@@ -19,8 +20,8 @@ pub enum DeviceState {
 
 #[derive(PartialEq, Clone)]
 pub enum ControllerInput {
-    Reset,
-    Restart,
+    ResetGame,
+    RestartGame,
     StartController,
     StopGame,
 }
@@ -40,13 +41,13 @@ pub struct BackgroundMultiDevice {
 
 impl BackgroundMultiDevice {
     pub fn get_state(&self) -> DeviceState {
-        *self.state.read().unwrap()
+        *self.state.read()
     }   
     pub fn get_pos(&self) -> Vec<(i32, i32)> {
-        self.pos.read().unwrap().clone()
+        self.pos.read().clone()
     }       
     pub fn set_controller_input(&self, controller_input: Option<ControllerInput>) {
-        *self.controller_input.write().unwrap() = controller_input;
+        *self.controller_input.write() = controller_input;
     }   
     pub fn from_auto_configure(num_devices: usize) -> Result<Self> {
         let mut multi_device = MultiDevice::from_auto_configure(num_devices)?;
@@ -63,10 +64,10 @@ impl BackgroundMultiDevice {
         let thread = thread::spawn(move || {
             loop {
                 if enable.load(std::sync::atomic::Ordering::Relaxed) { 
-                    let controller_input_value = controller_input.read().unwrap().clone();
+                    let controller_input_value = controller_input.read().clone();
                     multi_device.state_action(&controller_input_value).unwrap();
-                    *state.write().unwrap() = multi_device.get_state();
-                    *pos.write().unwrap() = multi_device.get_pos();
+                    *state.write() = multi_device.get_state();
+                    *pos.write() = multi_device.get_pos();
                 } else {
                     break;
                 }
@@ -143,11 +144,11 @@ impl MultiDevice {
             DeviceState::Complete => {
                 if let Some(input_value) = input {
                     match input_value {
-                        ControllerInput::Reset => {
+                        ControllerInput::ResetGame => {
                             Commander::run_on_all_commanders(&mut self.commanders, |commander: &mut Commander| commander.transition_to_pending_init_from_complete())?;
                             DeviceState::PendingInit
                         }
-                        ControllerInput::Restart => {
+                        ControllerInput::RestartGame => {
                             Commander::run_on_all_commanders(&mut self.commanders, |commander: &mut Commander| commander.transition_to_pending_start_from_complete())?;
                             DeviceState::PendingStart
                         }

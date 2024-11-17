@@ -2,7 +2,8 @@ use super::libserial::serial::Serial;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicI32};
 use anyhow::Result;
-use std::sync::{mpsc, Arc, RwLock};
+use std::sync::{mpsc, Arc};
+use parking_lot::RwLock;
 use std::thread;
 use std::{io, io::Write};
 
@@ -25,13 +26,13 @@ pub struct ButtonStates {
 impl BufferedBackgroundSerial {
     /// Writes a message to the tx_buffer
     pub fn send(&self, message: String) -> Result<()> {
-        self.serial.write().unwrap().send(message)?;
+        self.serial.write().send(message)?;
         thread::sleep(std::time::Duration::from_millis(100));
         Ok(())
     }
 
     pub fn get_pos(&self) -> (i32, i32) {
-        self.pos.read().unwrap().clone()
+        *self.pos.read()
     }
 
     fn button_states_from_message(message: &String) -> ButtonStates {
@@ -59,20 +60,20 @@ impl BufferedBackgroundSerial {
         //println!("last_states: {:?}, current_states: {:?}, rising_edges: {:?}", last_states, current_states, rising_edges);
 
         if rising_edges.top_left {
-            pos.write().unwrap().0 -= 1;
-            pos.write().unwrap().1 += 1;
+            pos.write().0 -= 1;
+            pos.write().1 += 1;
         }
         if rising_edges.top_right {
-            pos.write().unwrap().0 -= 1;
-            pos.write().unwrap().1 -= 1;
+            pos.write().0 -= 1;
+            pos.write().1 -= 1;
         }
         if rising_edges.bottom_left {
-            pos.write().unwrap().0 += 1;
-            pos.write().unwrap().1 += 1;
+            pos.write().0 += 1;
+            pos.write().1 += 1;
         }
         if rising_edges.bottom_right {
-            pos.write().unwrap().0 += 1;
-            pos.write().unwrap().1 -= 1;
+            pos.write().0 += 1;
+            pos.write().1 -= 1;
         }
     }
 
@@ -104,7 +105,7 @@ impl BufferedBackgroundSerial {
                     }
 
                     // check to see if we have something to receive
-                    let received_data = serial.read().unwrap().receive();
+                    let received_data = serial.read().receive();
                     match received_data {
                     Ok(data) => {
                         if data.bytes().len() == 1 || data.bytes().len() == 2 {

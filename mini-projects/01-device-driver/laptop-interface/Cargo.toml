@@ -8,6 +8,7 @@ anyhow = "1.0.93"
 eframe = "0.29.1"
 egui = "0.29.1"
 libc = "0.2.161"
+parking_lot = "0.12.3"
 rayon = "1.10.0"
 termion = "4.0.3"
 

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use eframe::egui;
 use egui::{Frame, Margin};
 use crate::controller_management::{BackgroundMultiDevice, ControllerInput, DeviceState, MultiDevice};
@@ -67,17 +69,27 @@ impl eframe::App for GameApp {
                         }
                         DeviceState::Running => {
                             display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
-                            self.device_manager.as_mut().unwrap().set_controller_input(None);
+                            if ctx.input(|input| input.key_pressed(egui::Key::Space)) { 
+                                self.set_controller_input(Some(ControllerInput::StopGame));
+                            }
+                            else {
+                                self.set_controller_input(None);
+                            }
                         }
                         DeviceState::Complete => {
                             display_complete(ui, &self.winner);
-                            self.device_manager.as_mut().unwrap().set_controller_input(None);
+                            if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
+                                self.set_controller_input(Some(ControllerInput::RestartGame));
+                            }
+                            else if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
+                                self.set_controller_input(Some(ControllerInput::ResetGame));
+                            }
                         }
                     }
                 }
             }
         });
-        ctx.request_repaint(); // Request repaint every frame
+        ctx.request_repaint_after(Duration::from_millis(10)); // Request repaint every frame
 
            /*  
             
