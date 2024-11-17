@@ -39,9 +39,9 @@ impl BufferedBackgroundSerial {
         let raw = message.parse::<u8>().unwrap();
         ButtonStates {
             top_left: (raw & (1 << 0)) != 0,
-            top_right: (raw & (1 << 1)) != 0,
-            bottom_left: (raw & (1 << 2)) != 0,
-            bottom_right: (raw & (1 << 3)) != 0,
+            top_right: (raw & (1 << 3)) != 0,
+            bottom_left: (raw & (1 << 1)) != 0,
+            bottom_right: (raw & (1 << 2)) != 0,
         }
     }
 
@@ -64,12 +64,12 @@ impl BufferedBackgroundSerial {
             pos.write().1 += 1;
         }
         if rising_edges.top_right {
-            pos.write().0 -= 1;
-            pos.write().1 -= 1;
-        }
-        if rising_edges.bottom_left {
             pos.write().0 += 1;
             pos.write().1 += 1;
+        }
+        if rising_edges.bottom_left {
+            pos.write().0 -= 1;
+            pos.write().1 -= 1;
         }
         if rising_edges.bottom_right {
             pos.write().0 += 1;
