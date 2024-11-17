@@ -1,15 +1,15 @@
 use std::time::Duration;
 
+use crate::controller_management::{
+    BackgroundMultiDevice, ControllerInput, DeviceState, MultiDevice,
+};
 use eframe::egui;
 use egui::{Frame, Margin};
-use crate::controller_management::{BackgroundMultiDevice, ControllerInput, DeviceState, MultiDevice};
-
 
 pub struct GameApp {
     device_manager: Option<BackgroundMultiDevice>,
     winner: Option<String>,
 }
-
 
 impl Default for GameApp {
     fn default() -> Self {
@@ -28,72 +28,71 @@ impl GameApp {
         self.device_manager.as_ref().unwrap().get_pos()[0]
     }
     pub fn get_pos_player_two(&self) -> (i32, i32) {
-        self.device_manager.as_ref().unwrap().get_pos()[1]  
+        self.device_manager.as_ref().unwrap().get_pos()[1]
     }
     pub fn set_controller_input(&mut self, controller_input: Option<ControllerInput>) {
-        self.device_manager.as_mut().unwrap().set_controller_input(controller_input);
-    }   
+        self.device_manager
+            .as_mut()
+            .unwrap()
+            .set_controller_input(controller_input);
+    }
 }
-
 
 impl eframe::App for GameApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             match &mut self.device_manager {
                 // device manager not yet initialized
-                None => {
-                    match BackgroundMultiDevice::from_auto_configure(2) {
-                        Ok(device_manager) => {
-                            self.device_manager = Some(device_manager);
-                        }
-                        Err(e) => {
-                            display_welcome(ui, &e.to_string());
-                        }
+                None => match BackgroundMultiDevice::from_auto_configure(2) {
+                    Ok(device_manager) => {
+                        self.device_manager = Some(device_manager);
                     }
-                }
+                    Err(e) => {
+                        display_welcome(ui, &e.to_string());
+                    }
+                },
                 // device manager initialized
-                Some(device_manager) => {
-                    match device_manager.get_state() {
-                        DeviceState::PendingInit => {
-                            display_welcome(ui, &"Initialized Controllers");
-                            self.device_manager.as_mut().unwrap().set_controller_input(None);   
-                        }
-                        DeviceState::PendingStart => {
-                            display_starting(ui);
-                            if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
-                                self.set_controller_input(Some(ControllerInput::StartController));
-                            }
-                            else {
-                                self.set_controller_input(None);
-                            }
-                        }
-                        DeviceState::Running => {
-                            display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
-                            if ctx.input(|input| input.key_pressed(egui::Key::Space)) { 
-                                self.set_controller_input(Some(ControllerInput::StopGame));
-                            }
-                            else {
-                                self.set_controller_input(None);
-                            }
-                        }
-                        DeviceState::Complete => {
-                            self.winner = Some(calculate_winner(self.get_pos_player_one(), self.get_pos_player_two()));
-                            display_complete(ui, &self.winner);
-                            if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
-                                self.set_controller_input(Some(ControllerInput::RestartGame));
-                            }
-                            else if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
-                                self.set_controller_input(Some(ControllerInput::ResetGame));
-                            }
+                Some(device_manager) => match device_manager.get_state() {
+                    DeviceState::PendingInit => {
+                        display_welcome(ui, &"Initialized Controllers");
+                        self.device_manager
+                            .as_mut()
+                            .unwrap()
+                            .set_controller_input(None);
+                    }
+                    DeviceState::PendingStart => {
+                        display_starting(ui);
+                        if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
+                            self.set_controller_input(Some(ControllerInput::StartController));
+                        } else {
+                            self.set_controller_input(None);
                         }
                     }
-                }
+                    DeviceState::Running => {
+                        display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
+                        if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
+                            self.set_controller_input(Some(ControllerInput::StopGame));
+                        } else {
+                            self.set_controller_input(None);
+                        }
+                    }
+                    DeviceState::Complete => {
+                        self.winner =
+                            calculate_winner(self.get_pos_player_one(), self.get_pos_player_two());
+                        display_complete(ui, &self.winner);
+                        if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
+                            self.set_controller_input(Some(ControllerInput::RestartGame));
+                        } else if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
+                            self.set_controller_input(Some(ControllerInput::ResetGame));
+                        }
+                    }
+                },
             }
         });
         ctx.request_repaint_after(Duration::from_millis(10)); // Request repaint every frame
 
-           /*  
-            
+        /*
+
             match self.get_state() {
             DeviceState::PendingInit => {
                 display_welcome(ui);
@@ -138,9 +137,7 @@ fn display_welcome(ui: &mut egui::Ui, intialization_text: &str) {
                     egui::RichText::new("Welcome").size(60.0).strong(),
                 ));
                 ui.add(egui::Label::new(
-                    egui::RichText::new(intialization_text)
-                        .size(20.0)
-                        .italics(),
+                    egui::RichText::new(intialization_text).size(20.0).italics(),
                 ));
             })
         });
@@ -226,12 +223,12 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
                 ));
 
                 let winner = match winner {
-                    Some(winner) => winner,
-                    None => &"Draw".to_string(),
+                    Some(winner) => format!("The winner is {winner}").to_string(),
+                    None => "It is a Draw".to_string(),
                 };
 
                 ui.add(egui::Label::new(
-                    egui::RichText::new(format!("The winner is {}", *winner))
+                    egui::RichText::new(format!("{}", winner))
                         .size(20.0)
                         .italics(),
                 ));
@@ -254,17 +251,17 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
         });
 }
 
-fn calculate_winner(controller_one_pos: (i32, i32), controller_two_pos: (i32, i32)) -> String {
-    println!("{:?}", controller_one_pos);
-    println!("{:?}", controller_two_pos);
+fn calculate_winner(
+    controller_one_pos: (i32, i32),
+    controller_two_pos: (i32, i32),
+) -> Option<String> {
     let pos_one = ((controller_one_pos.0.pow(2) + controller_one_pos.1.pow(2)) as f64).sqrt();
     let pos_two = ((controller_two_pos.0.pow(2) + controller_two_pos.1.pow(2)) as f64).sqrt();
-    println!("One: {}, Two: {}", pos_one, pos_two);
     if pos_one > pos_two {
-        "Controller 0".to_string()
+        Some("Controller 0".to_string())
     } else if pos_one < pos_two {
-        "Controller 1".to_string()
+        Some("Controller 1".to_string())
     } else {
-        "Draw".to_string()
+        None
     }
 }
