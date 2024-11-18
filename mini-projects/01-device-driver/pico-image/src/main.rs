@@ -378,18 +378,35 @@ fn process_state_serial_message(message: &str) {
                     gpios.as_mut().unwrap().button_states =
                         (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingInit;
+                    reset_position();
                 } else if message.contains("restart") {
                     *player_position = (0, 0);
                     gpios.as_mut().unwrap().button_states =
                         (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingStart;
+                    reset_position();
                 } else if message.contains("start controller") {
                     *player_position = (0, 0);
                     gpios.as_mut().unwrap().button_states =
                         (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::Running;
+                    reset_position();
                 }
             }
+        }
+    });
+}
+
+fn reset_position() {
+    critical_section::with(|cs| {
+        // Access the USB device container safely
+        if let Some(usb_container) = GLOBAL_USB_DEVICE.borrow(cs).borrow_mut().as_mut() {
+            // Prepare the reset message (0,0) position
+            let mut message: String<20> = String::new();
+            writeln!(message, "0,0").unwrap(); // Send position 0,0
+                                               // Send the reset position via serial
+            let _ = usb_container.serial.write(message.as_bytes());
+            let _ = usb_container.serial.flush();
         }
     });
 }
