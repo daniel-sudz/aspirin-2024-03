@@ -4,7 +4,11 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::{entry, hal::{clocks::ClocksManager, fugit::MicrosDurationU32, gpio, timer::Alarm}, pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS}};
+use rp_pico::{
+    entry,
+    hal::{clocks::ClocksManager, fugit::MicrosDurationU32, gpio, timer::Alarm},
+    pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS},
+};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -17,7 +21,7 @@ use rp_pico::hal::pac::interrupt;
 
 // A shorter alias for the Hardware Abstraction Layer, which provides
 // higher-level drivers.
-use embedded_hal::digital::{InputPin, OutputPin, PinState, };
+use embedded_hal::digital::{InputPin, OutputPin, PinState};
 use rp_pico::hal;
 use rp_pico::hal::gpio::Interrupt::EdgeLow;
 use rp_pico::hal::Sio;
@@ -28,11 +32,17 @@ use usb_device::{class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
 
 // Misc
-use core::{borrow::BorrowMut, cell::Cell, fmt::Write, iter::Once, mem::transmute, ops::{Deref, DerefMut}};
-use heapless::String;
 use core::cell::RefCell;
+use core::{
+    borrow::BorrowMut,
+    cell::Cell,
+    fmt::Write,
+    iter::Once,
+    mem::transmute,
+    ops::{Deref, DerefMut},
+};
 use critical_section::Mutex;
-
+use heapless::String;
 
 // Enum for Device State Machine
 #[repr(i32)]
@@ -47,7 +57,6 @@ enum DeviceState {
 // Heartbeat LED Delay
 const LED_TOGGLE_DELAY: u64 = 500_000;
 const SERIAL_TX_PERIOD: u64 = 100_000;
-
 
 // Type our button pins
 type LeftButtonType = gpio::Pin<gpio::bank0::Gpio13, gpio::FunctionSioInput, gpio::PullDown>;
@@ -79,10 +88,11 @@ struct UsbSerialContainer<'a, B: usb_device::bus::UsbBus> {
 }
 
 static mut USB_BUS_ALLOCATOR: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
-static GLOBAL_USB_DEVICE: Mutex<RefCell<Option<UsbSerialContainer<'_, hal::usb::UsbBus>>>> = Mutex::new(RefCell::new(None));
-static GLOBAL_DEVICE_STATE: Mutex<RefCell<DeviceState>> = Mutex::new(RefCell::new(DeviceState::PendingInit));
+static GLOBAL_USB_DEVICE: Mutex<RefCell<Option<UsbSerialContainer<'_, hal::usb::UsbBus>>>> =
+    Mutex::new(RefCell::new(None));
+static GLOBAL_DEVICE_STATE: Mutex<RefCell<DeviceState>> =
+    Mutex::new(RefCell::new(DeviceState::PendingInit));
 static GLOBAL_TIMER: Mutex<RefCell<Option<hal::Timer>>> = Mutex::new(RefCell::new(None));
-
 
 /// Entry point to our bare-metal application.
 ///
@@ -122,22 +132,21 @@ fn main() -> ! {
 
     // Give away ownership fo the buttons
     let button_pins = ButtonPins {
-        left: left_button, 
-        top: top_button, 
-        bottom: bottom_button, 
-        right: right_button, 
-        button_states: (PinState::Low, PinState::Low, PinState::Low), 
-        led_green: green_led, 
-        led_yellow: yellow_led, 
-        led_red: red_led 
+        left: left_button,
+        top: top_button,
+        bottom: bottom_button,
+        right: right_button,
+        button_states: (PinState::Low, PinState::Low, PinState::Low),
+        led_green: green_led,
+        led_yellow: yellow_led,
+        led_red: red_led,
     };
     critical_section::with(|cs| {
         GLOBAL_GPIO.borrow(cs).replace(Some(button_pins));
     });
-    
+
     // Set up the watchdog driver - needed by the clock setup code
     let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
-
 
     // Configure the clocks
     //
@@ -172,14 +181,17 @@ fn main() -> ! {
     let bus_ref = unsafe { USB_BUS_ALLOCATOR.as_ref().unwrap() };
     let serial = SerialPort::new(&bus_ref);
     let usb_dev = UsbDeviceBuilder::new(&bus_ref, UsbVidPid(0x16c0, 0x27dd))
-    .strings(&[StringDescriptors::default()
-        .manufacturer("Rustbox Studio")
-        .product("Rusty Ports")
-        .serial_number("RustboxController0")])
-    .unwrap()
-    .device_class(2) 
-    .build();
-    let usb_container = UsbSerialContainer { serial: serial, usb_dev: usb_dev };
+        .strings(&[StringDescriptors::default()
+            .manufacturer("Rustbox Studio")
+            .product("Rusty Ports")
+            .serial_number("RustboxController0")])
+        .unwrap()
+        .device_class(2)
+        .build();
+    let usb_container = UsbSerialContainer {
+        serial: serial,
+        usb_dev: usb_dev,
+    };
     critical_section::with(|cs| {
         GLOBAL_USB_DEVICE.borrow(cs).replace(Some(usb_container));
     });
@@ -195,9 +207,8 @@ fn main() -> ! {
     }
 }
 
-
 /// Sets the leds to the current state
-fn set_leds () {
+fn set_leds() {
     critical_section::with(|cs| {
         let gpios = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
         let gpios = gpios.as_mut().unwrap();
@@ -213,10 +224,19 @@ fn debug_looper() {
         let state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
         let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
         let mut debug_str: String<100> = String::new();
-        writeln!(debug_str, "State: {:?}, Position: {:?}\n", state, player_position).unwrap();
-        let _ = usb_container.as_mut().unwrap().serial.write(debug_str.as_bytes());
+        writeln!(
+            debug_str,
+            "State: {:?}, Position: {:?}\n",
+            state, player_position
+        )
+        .unwrap();
+        let _ = usb_container
+            .as_mut()
+            .unwrap()
+            .serial
+            .write(debug_str.as_bytes());
         let _ = usb_container.as_mut().unwrap().serial.flush();
-    }); 
+    });
 }
 
 /// Interrupt handler for button presses
@@ -236,7 +256,7 @@ fn IO_IRQ_BANK0() {
         let gpios = gpios.as_mut().unwrap();
         let timer = &mut *GLOBAL_TIMER.borrow(cs).borrow_mut();
         let timer = timer.as_mut().unwrap();
-        
+
         let current_time = timer.get_counter().ticks();
         let debounce_time = 50_000;
 
@@ -276,21 +296,23 @@ fn IO_IRQ_BANK0() {
         }
 
         // Update and send positions if DeviceState::Running
-        match state {   
+        match state {
             DeviceState::Running => {
                 player_position.0 += pos_diff.0;
                 player_position.1 += pos_diff.1;
                 let mut message: String<20> = String::new();
                 writeln!(message, "{:?},{:?}", player_position.0, player_position.1).unwrap();
-                let _ = usb_container.as_mut().unwrap().serial.write(message.as_bytes());
+                let _ = usb_container
+                    .as_mut()
+                    .unwrap()
+                    .serial
+                    .write(message.as_bytes());
                 let _ = usb_container.as_mut().unwrap().serial.flush();
             }
             _ => {}
         }
     });
-
 }
-
 
 /// Interrupt handler for USB serial
 #[interrupt]
@@ -305,10 +327,10 @@ fn USBCTRL_IRQ() {
                     Ok(count) => {
                         return match core::str::from_utf8(&buf[..count]) {
                             Ok(s) => Some(s.trim()),
-                            Err(_) => None
+                            Err(_) => None,
                         };
                     }
-                }
+                };
             }
         }
         None
@@ -317,7 +339,6 @@ fn USBCTRL_IRQ() {
         process_state_serial_message(message);
     }
 }
-
 
 fn process_state_serial_message(message: &str) {
     critical_section::with(|cs| {
@@ -328,58 +349,64 @@ fn process_state_serial_message(message: &str) {
             DeviceState::PendingInit => {
                 if message.contains("init controller") {
                     *device_state = DeviceState::PendingStart;
-                }
-                else if message.contains("reset") {
+                } else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::PendingStart => {
                 if message.contains("set ready led") {
-                    gpios.as_mut().unwrap().button_states = (PinState::High, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::High, PinState::Low, PinState::Low);
                 } else if message.contains("set set led") {
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::High, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::High, PinState::Low);
                 } else if message.contains("set go led") {
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::High);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::High);
                 } else if message.contains("set all leds") {
-                    gpios.as_mut().unwrap().button_states = (PinState::High, PinState::High, PinState::High);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::High, PinState::High, PinState::High);
                 } else if message.contains("clear all leds") {
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                 }
                 if message.contains("start controller") {
                     *device_state = DeviceState::Running;
-                }
-                else if message.contains("reset") {
+                } else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::Running => {
                 if message.contains("stop controller") {
                     *device_state = DeviceState::Complete;
-                }
-                else if message.contains("reset") {
+                } else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::Complete => {
                 if message.contains("reset") {
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingInit;
-                }
-                else if message.contains("restart") {
+                } else if message.contains("restart") {
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingStart;
-                }
-                else if message.contains("start controller") {
+                } else if message.contains("start controller") {
                     *player_position = (0, 0);
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                    gpios.as_mut().unwrap().button_states =
+                        (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::Running;
                 }
             }
