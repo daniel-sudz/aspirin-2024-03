@@ -331,6 +331,8 @@ fn process_state_serial_message(message: &str) {
                 }
                 else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::PendingStart => {
@@ -350,6 +352,8 @@ fn process_state_serial_message(message: &str) {
                 }
                 else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::Running => {
@@ -358,19 +362,26 @@ fn process_state_serial_message(message: &str) {
                 }
                 else if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                 }
             }
             DeviceState::Complete => {
                 if message.contains("reset") {
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingInit;
                 }
                 else if message.contains("restart") {
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::PendingStart;
                 }
                 else if message.contains("start controller") {
+                    *player_position = (0, 0);
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
                     *device_state = DeviceState::Running;
                 }
-                *player_position = (0, 0);
             }
         }
     });
