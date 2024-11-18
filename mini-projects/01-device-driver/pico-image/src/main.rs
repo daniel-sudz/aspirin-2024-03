@@ -227,44 +227,46 @@ fn debug_looper() {
 #[interrupt]
 fn IO_IRQ_BANK0() {
     critical_section::with(|cs| {
-        // Check buttons states and update player position
         let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
-        if let Some(gpios) = GLOBAL_GPIO.borrow(cs).borrow_mut().as_mut() {
-            if gpios.left.interrupt_status(EdgeLow) {
-                player_position.0 -= 1;
-                player_position.1 += 1;
-                gpios.left.clear_interrupt(EdgeLow);
-            }
-            if gpios.top.interrupt_status(EdgeLow) {
-                player_position.0 -= 1;
-                player_position.1 -= 1;
-                gpios.top.clear_interrupt(EdgeLow);
-            }
-            if gpios.right.interrupt_status(EdgeLow) {
-                player_position.0 += 1;
-                player_position.1 -= 1;
-                gpios.right.clear_interrupt(EdgeLow);
-            }
-            if gpios.bottom.interrupt_status(EdgeLow) {
-                player_position.0 += 1;
-                player_position.1 += 1;
-                gpios.bottom.clear_interrupt(EdgeLow);
-            }
-        }
-
-        // Send player position over USB
         let usb_container = &mut *GLOBAL_USB_DEVICE.borrow(cs).borrow_mut();
         let state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
-        match state {
-            DeviceState::PendingInit => {}
-            DeviceState::PendingStart => {}
+        let gpios = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
+        let gpios = gpios.as_mut().unwrap();
+
+        // Calculate position difference
+        let mut pos_diff = (0, 0);
+        if gpios.left.interrupt_status(EdgeLow) {
+            pos_diff.0 += 1;
+            pos_diff.1 += 1;
+            gpios.left.clear_interrupt(EdgeLow);
+        }
+        if gpios.top.interrupt_status(EdgeLow) {
+            pos_diff.0 -= 1;
+            pos_diff.1 -= 1;
+            gpios.top.clear_interrupt(EdgeLow);
+        }
+        if gpios.right.interrupt_status(EdgeLow) {
+            pos_diff.0 += 1;
+            pos_diff.1 -= 1;
+            gpios.right.clear_interrupt(EdgeLow);
+        }
+        if gpios.bottom.interrupt_status(EdgeLow) {
+            pos_diff.0 -= 1;
+            pos_diff.1 += 1;
+            gpios.bottom.clear_interrupt(EdgeLow);
+        }
+
+        // Update and send positions if DeviceState::Running
+        match state {   
             DeviceState::Running => {
+                player_position.0 += pos_diff.0;
+                player_position.1 += pos_diff.1;
                 let mut message: String<20> = String::new();
                 writeln!(message, "{:?},{:?}", player_position.0, player_position.1).unwrap();
                 let _ = usb_container.as_mut().unwrap().serial.write(message.as_bytes());
                 let _ = usb_container.as_mut().unwrap().serial.flush();
             }
-            DeviceState::Complete => {}
+            _ => {}
         }
     });
 
