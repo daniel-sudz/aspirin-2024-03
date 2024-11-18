@@ -17,7 +17,7 @@ use rp_pico::hal::pac::interrupt;
 
 // A shorter alias for the Hardware Abstraction Layer, which provides
 // higher-level drivers.
-use embedded_hal::digital::{InputPin, OutputPin, PinState};
+use embedded_hal::digital::{InputPin, OutputPin, PinState, };
 use rp_pico::hal;
 use rp_pico::hal::gpio::Interrupt::EdgeLow;
 use rp_pico::hal::Sio;
@@ -54,11 +54,18 @@ type LeftButtonType = gpio::Pin<gpio::bank0::Gpio13, gpio::FunctionSioInput, gpi
 type TopButtonType = gpio::Pin<gpio::bank0::Gpio15, gpio::FunctionSioInput, gpio::PullDown>;
 type BottomButtonType = gpio::Pin<gpio::bank0::Gpio14, gpio::FunctionSioInput, gpio::PullDown>;
 type RightButtonType = gpio::Pin<gpio::bank0::Gpio12, gpio::FunctionSioInput, gpio::PullDown>;
+type GreenLedType = gpio::Pin<gpio::bank0::Gpio16, gpio::FunctionSioOutput, gpio::PullDown>;
+type YellowLedType = gpio::Pin<gpio::bank0::Gpio17, gpio::FunctionSioOutput, gpio::PullDown>;
+type RedLedType = gpio::Pin<gpio::bank0::Gpio18, gpio::FunctionSioOutput, gpio::PullDown>;
 struct ButtonPins {
     left: LeftButtonType,
     top: TopButtonType,
     bottom: BottomButtonType,
     right: RightButtonType,
+    button_states: (PinState, PinState, PinState),
+    led_green: GreenLedType,
+    led_yellow: YellowLedType,
+    led_red: RedLedType,
 }
 static GLOBAL_GPIO: Mutex<RefCell<Option<ButtonPins>>> = Mutex::new(RefCell::new(None));
 
@@ -73,6 +80,8 @@ struct UsbSerialContainer<'a, B: usb_device::bus::UsbBus> {
 
 static mut USB_BUS_ALLOCATOR: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
 static GLOBAL_USB_DEVICE: Mutex<RefCell<Option<UsbSerialContainer<'_, hal::usb::UsbBus>>>> = Mutex::new(RefCell::new(None));
+
+static GLOBAL_DEVICE_STATE: Mutex<RefCell<DeviceState>> = Mutex::new(RefCell::new(DeviceState::PendingInit));
 
 
 /// Entry point to our bare-metal application.
@@ -95,9 +104,9 @@ fn main() -> ! {
 
     // LEDs
     let mut heartbeat_led = pins.led.into_push_pull_output();
-    let mut red_led = pins.gpio18.into_push_pull_output();
-    let mut yellow_led = pins.gpio17.into_push_pull_output();
-    let mut green_led = pins.gpio16.into_push_pull_output();
+    let mut red_led: RedLedType = pins.gpio18.into_push_pull_output();
+    let mut yellow_led: YellowLedType = pins.gpio17.into_push_pull_output();
+    let mut green_led: GreenLedType = pins.gpio16.into_push_pull_output();
 
     // Define buttons
     let mut left_button: LeftButtonType = pins.gpio13.into_pull_down_input();
@@ -112,7 +121,16 @@ fn main() -> ! {
     right_button.set_interrupt_enabled(EdgeLow, true);
 
     // Give away ownership fo the buttons
-    let button_pins = ButtonPins { left: left_button, top: top_button, bottom: bottom_button, right: right_button };
+    let button_pins = ButtonPins {
+        left: left_button, 
+        top: top_button, 
+        bottom: bottom_button, 
+        right: right_button, 
+        button_states: (PinState::Low, PinState::Low, PinState::Low), 
+        led_green: green_led, 
+        led_yellow: yellow_led, 
+        led_red: red_led 
+    };
     critical_section::with(|cs| {
         GLOBAL_GPIO.borrow(cs).replace(Some(button_pins));
     });
@@ -164,12 +182,7 @@ fn main() -> ! {
     });
     
     // Initialize state variables
-    let mut device_state = DeviceState::PendingInit;
     let mut led_state = PinState::High;
-    let mut last_led_transition_time = timer.get_counter().ticks();
-    heartbeat_led
-        .set_high()
-        .expect("GPIOs should never fail to change stated");
     let mut rsg_led_states = (PinState::Low, PinState::Low, PinState::Low);
     let mut in_debug_mode = false;
     let mut last_button_state_transmission_time: u64 = 0;
@@ -178,142 +191,6 @@ fn main() -> ! {
         // wait for interrupt
         cortex_m::asm::wfi();
     }
-    /* 
-    loop {
-        let current_time = timer.get_counter().ticks();
-
-
-        // Check for new data
-        if usb_dev.poll(&mut [&mut serial]) {
-            let mut buf = [0u8; 64];
-            match serial.read(&mut buf) {
-                Err(_e) => {
-                    // Do nothing
-                }
-                Ok(0) => {
-                    // Do nothing
-                }
-                Ok(count) => {
-                    let serial_cmd = match core::str::from_utf8(&buf[..count]) {
-                        Ok(s) => s.trim(), // If valid UTF-8, convert to String
-                        Err(_) => {
-                            "" // Returning an empty string for invalid UTF-8
-                        }
-                    };
-
-                    if serial_cmd.contains("enable debug") {
-                        in_debug_mode = true;
-                    }
-                    if serial_cmd.contains("disable debug") {
-                        in_debug_mode = false;
-                    }
-
-                    // State Machine Updates only based on Serial Input
-                    match device_state {
-                        DeviceState::PendingInit => {
-                            if serial_cmd.contains("init controller") {
-                                device_state = DeviceState::PendingStart;
-                            }
-                        }
-                        DeviceState::PendingStart => {
-                            if serial_cmd.contains("set ready led") {
-                                rsg_led_states = (PinState::High, PinState::Low, PinState::Low);
-                            } else if serial_cmd.contains("set set led") {
-                                rsg_led_states = (PinState::Low, PinState::High, PinState::Low);
-                            } else if serial_cmd.contains("set go led") {
-                                rsg_led_states = (PinState::Low, PinState::Low, PinState::High);
-                            } else if serial_cmd.contains("set all leds") {
-                                rsg_led_states = (PinState::High, PinState::High, PinState::High);
-                            } else if serial_cmd.contains("clear all leds") {
-                                rsg_led_states = (PinState::Low, PinState::Low, PinState::Low);
-                            }
-
-                            if serial_cmd.contains("start controller") {
-                                device_state = DeviceState::Running;
-                            }
-                        }
-                        DeviceState::Running => {
-                            if serial_cmd.contains("stop controller") {
-                                device_state = DeviceState::Complete;
-                            }
-                        }
-                        DeviceState::Complete => {
-                            if serial_cmd.contains("reset") {
-                                device_state = DeviceState::PendingInit;
-                            }
-                            if serial_cmd.contains("restart") {
-                                device_state = DeviceState::PendingStart;
-                            }
-                            if serial_cmd.contains("start controller") {
-                                device_state = DeviceState::Running;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Actions based on the current state
-        match device_state {
-            DeviceState::PendingInit => {}
-            DeviceState::PendingStart => {
-                red_led
-                    .set_state(rsg_led_states.0)
-                    .expect("GPIOs should never fail to change stated");
-                yellow_led
-                    .set_state(rsg_led_states.1)
-                    .expect("GPIOs should never fail to change stated");
-                green_led
-                    .set_state(rsg_led_states.2)
-                    .expect("GPIOs should never fail to change stated");
-            }
-            DeviceState::Running => {
-                if current_time - last_button_state_transmission_time > SERIAL_TX_PERIOD {
-                    last_button_state_transmission_time = current_time;
-                    let mut button_text: String<20> = String::new();
-                    let button_data = (left_button
-                        .is_high()
-                        .expect("GPIOs should never fail to read state")
-                        as u8)
-                        + ((top_button
-                            .is_high()
-                            .expect("GPIOs should never fail to read state")
-                            as u8)
-                            << 1)
-                        + ((bottom_button
-                            .is_high()
-                            .expect("GPIOs should never fail to read state")
-                            as u8)
-                            << 2)
-                        + ((right_button
-                            .is_high()
-                            .expect("GPIOs should never fail to read state")
-                            as u8)
-                            << 3);
-                    writeln!(button_text, "{button_data}")
-                        .expect("GPIOs should never fail to read state");
-
-                    // Only possible error is when USB Buffer is full, which just means
-                    // that this specific message will be dropped.
-                    let _ = serial.write(button_text.as_bytes());
-                    let _ = serial.flush();
-                }
-            }
-            DeviceState::Complete => {
-                red_led
-                    .set_low()
-                    .expect("GPIOs should never fail to change stated");
-                yellow_led
-                    .set_low()
-                    .expect("GPIOs should never fail to change stated");
-                green_led
-                    .set_low()
-                    .expect("GPIOs should never fail to change stated");
-                rsg_led_states = (PinState::Low, PinState::Low, PinState::Low);
-            }
-        }
-    }
-    */
 }
 
 // End of file
@@ -363,5 +240,90 @@ fn IO_IRQ_BANK0() {
 /// Interrupt handler for USB serial
 #[interrupt]
 fn USBCTRL_IRQ() {
-    // Do nothing
+    let mut buf = [0u8; 64];
+    let message: Option<&str> = critical_section::with(|cs| {
+        if let Some(usb_container) = GLOBAL_USB_DEVICE.borrow(cs).borrow_mut().as_mut() {
+            if usb_container.usb_dev.poll(&mut [&mut usb_container.serial]) {
+                return match usb_container.serial.read(&mut buf) {
+                    Ok(0) => None,
+                    Err(_) => None,
+                    Ok(count) => {
+                        return match core::str::from_utf8(&buf[..count]) {
+                            Ok(s) => Some(s.trim()),
+                            Err(_) => None
+                        };
+                    }
+                }
+            }
+        }
+        None
+    });
+    if let Some(message) = message {
+        process_state_serial_message(message);
+    }
+}
+/// Timer interrupt handler
+#[interrupt]
+fn TIMER_IRQ_0() {
+    critical_section::with(|cs| {
+        let device_state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
+        let mut gpios = GLOBAL_GPIO.borrow(cs).borrow_mut();
+        let gpios = gpios.as_mut().unwrap();
+        match device_state {
+            DeviceState::PendingInit => {}
+            DeviceState::PendingStart => {
+                let _ = gpios.led_red.set_state(gpios.button_states.0);
+                let _ = gpios.led_yellow.set_state(gpios.button_states.1);
+                let _ = gpios.led_green.set_state(gpios.button_states.2);
+            }
+            DeviceState::Running => {}
+            DeviceState::Complete => {
+                let _ = gpios.led_red.set_state(PinState::Low);
+                let _ = gpios.led_yellow.set_state(PinState::Low);
+                let _ = gpios.led_green.set_state(PinState::Low);
+                gpios.button_states = (PinState::Low, PinState::Low, PinState::Low);
+            }
+        }
+    });
+}
+
+
+fn process_state_serial_message(message: &str) {
+    critical_section::with(|cs| {
+        let device_state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
+        let gpios: &mut Option<ButtonPins> = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
+        match device_state {
+            DeviceState::PendingInit => {
+                if message.contains("init controller") {
+                    *device_state = DeviceState::PendingStart;
+                }
+            }
+            DeviceState::PendingStart => {
+                if message.contains("set ready led") {
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::High);
+                } else if message.contains("set set led") {
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::High, PinState::Low);
+                } else if message.contains("set go led") {
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::High, PinState::Low);
+                } else if message.contains("set all leds") {
+                    gpios.as_mut().unwrap().button_states = (PinState::High, PinState::High, PinState::High);
+                } else if message.contains("clear all leds") {
+                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::Low, PinState::Low);
+                }
+                if message.contains("start controller") {
+                    *device_state = DeviceState::Running;
+                }
+            }
+            DeviceState::Running => {
+                if message.contains("stop controller") {
+                    *device_state = DeviceState::Complete;
+                }
+            }
+            DeviceState::Complete => {
+                if message.contains("reset") {
+                    *device_state = DeviceState::PendingInit;
+                }
+            }
+        }
+    });
 }
