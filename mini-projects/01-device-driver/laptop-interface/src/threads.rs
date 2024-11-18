@@ -1,12 +1,11 @@
 use super::libserial::serial::Serial;
+use anyhow::Result;
+use parking_lot::RwLock;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicI32};
-use anyhow::Result;
 use std::sync::{mpsc, Arc};
-use parking_lot::RwLock;
 use std::thread;
 use std::{io, io::Write};
-
 
 pub struct BufferedBackgroundSerial {
     serial: Arc<RwLock<Serial>>,
@@ -44,38 +43,41 @@ impl BufferedBackgroundSerial {
             join_handle: None,
         };
 
-        let serial = s.serial.clone(); 
+        let serial = s.serial.clone();
         let enable = s.enable.clone();
         let pos = s.pos.clone();
         let join_handle = {
-            thread::Builder::new().name("buffered_background_serial".to_string()).spawn(move || {
-                loop {
-                    // exit thread if enable is false
-                    if !enable.load(std::sync::atomic::Ordering::Relaxed) {
-                        break;
-                    }
+            thread::Builder::new()
+                .name("buffered_background_serial".to_string())
+                .spawn(move || {
+                    loop {
+                        // exit thread if enable is false
+                        if !enable.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
 
-                    // check to see if we have something to receive
-                    let received_data = serial.read().receive();
-                    match received_data {
-                    Ok(data) => {
-                        if data.contains(",") {
-                            let split = data.split(",").collect::<Vec<&str>>();
-                            if split.len() == 2 {
-                                let x = split[0].parse::<i32>().unwrap();
-                                let y = split[1].parse::<i32>().unwrap();
-                                *pos.write() = (x, y);
-                                println!("pos inside: {:?}", pos);
+                        // check to see if we have something to receive
+                        let received_data = serial.read().receive();
+                        match received_data {
+                            Ok(data) => {
+                                if data.contains(",") {
+                                    let split = data.split(",").collect::<Vec<&str>>();
+                                    if split.len() == 2 {
+                                        let x = split[0].parse::<i32>().unwrap();
+                                        let y = split[1].parse::<i32>().unwrap();
+                                        *pos.write() = (x, y);
+                                        println!("pos inside: {:?}", pos);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                println!("Error receiving data: {}", e);
                             }
                         }
                     }
-                    Err(e) => {
-                        println!("Error receiving data: {}", e);
-                        }
-                    }
-                }
-            })
-        }.unwrap();
+                })
+        }
+        .unwrap();
         s.join_handle = Some(join_handle);
         s
     }
@@ -83,7 +85,8 @@ impl BufferedBackgroundSerial {
 
 impl Drop for BufferedBackgroundSerial {
     fn drop(&mut self) {
-        self.enable.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.enable
+            .store(false, std::sync::atomic::Ordering::Relaxed);
         if let Some(handle) = self.join_handle.take() {
             handle.join().unwrap();
         }
@@ -91,5 +94,4 @@ impl Drop for BufferedBackgroundSerial {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

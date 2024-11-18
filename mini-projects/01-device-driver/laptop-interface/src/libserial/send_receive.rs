@@ -5,8 +5,9 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
 
 use crate::libserial::ffi::{
-    sp_blocking_read, sp_blocking_read_next, sp_blocking_write, sp_drain, sp_open, sp_set_baudrate, sp_set_bits, sp_set_flowcontrol,
-    sp_set_parity, sp_set_stopbits, SpFlowControl, SpMode, SpParity,
+    sp_blocking_read, sp_blocking_read_next, sp_blocking_write, sp_drain, sp_open, sp_set_baudrate,
+    sp_set_bits, sp_set_flowcontrol, sp_set_parity, sp_set_stopbits, SpFlowControl, SpMode,
+    SpParity,
 };
 
 use super::ffi::{sp_port, SpReturn};
@@ -80,10 +81,12 @@ pub fn receive(port: &Port) -> Result<String> {
                 }
             }
         }
-  }
-  let result = String::from_utf8_lossy(&buffer[..buffer_idx]).trim().to_string();
-  //println!("total read: {} result: {}", buffer_idx, result);
-  Ok(result)
+    }
+    let result = String::from_utf8_lossy(&buffer[..buffer_idx])
+        .trim()
+        .to_string();
+    //println!("total read: {} result: {}", buffer_idx, result);
+    Ok(result)
 }
 
 mod tests {

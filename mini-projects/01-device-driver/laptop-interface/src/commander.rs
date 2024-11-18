@@ -1,7 +1,7 @@
-use std::thread;
-use rayon::prelude::*;
-use anyhow::Result;
 use crate::libserial::serial::Serial;
+use anyhow::Result;
+use rayon::prelude::*;
+use std::thread;
 
 use crate::libserial::types::Port;
 use crate::threads::BufferedBackgroundSerial;
@@ -16,18 +16,27 @@ unsafe impl Send for Commander {}
 impl Commander {
     pub fn from_auto_configure() -> Result<Self> {
         let serial = Serial::from_auto_configure()?;
-        Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
+        Ok(Self {
+            serial: BufferedBackgroundSerial::from_serial(serial),
+            pos: (0, 0),
+        })
     }
     pub fn from_port(port: Port) -> Result<Self> {
         let serial = Serial::from_port(port)?;
-        Ok(Self { serial: BufferedBackgroundSerial::from_serial(serial), pos: (0,0) })
+        Ok(Self {
+            serial: BufferedBackgroundSerial::from_serial(serial),
+            pos: (0, 0),
+        })
     }
 
     pub fn get_pos(&self) -> (i32, i32) {
         self.serial.get_pos()
     }
 
-    pub fn run_on_all_commanders(commanders: &mut Vec<Commander>, f: impl Fn(&mut Commander) -> Result<()> + Send + std::marker::Copy) -> Result<()> {
+    pub fn run_on_all_commanders(
+        commanders: &mut Vec<Commander>,
+        f: impl Fn(&mut Commander) -> Result<()> + Send + std::marker::Copy,
+    ) -> Result<()> {
         thread::scope(move |s| {
             for commander in commanders {
                 s.spawn(move || f(commander));
@@ -35,7 +44,6 @@ impl Commander {
         });
         Ok(())
     }
-
 
     /// Transitions from DeviceState::PendingInit to DeviceState::PendingStart
     pub fn transition_to_pending_start(&self) -> Result<()> {
@@ -130,7 +138,9 @@ mod tests {
         }
 
         commander.transition_to_complete().unwrap();
-        commander.transition_to_pending_init_from_complete().unwrap();
+        commander
+            .transition_to_pending_init_from_complete()
+            .unwrap();
         //commander.set_go_led().unwrap();
     }
 }

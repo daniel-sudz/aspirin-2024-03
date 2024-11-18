@@ -1,10 +1,13 @@
-use std::ffi::{CStr, CString};
-use std::ptr;
-use std::os::raw::{c_char, c_int};
+use super::{
+    ffi::{sp_free_port_list, sp_get_port_name, sp_list_ports, sp_port, SpReturn},
+    types::Port,
+};
 use anyhow::Result;
-use super::{types::Port, ffi::{SpReturn, sp_port, sp_list_ports, sp_get_port_name, sp_free_port_list}};
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_int};
+use std::ptr;
 
-// Example output: 
+// Example output:
 // ---- list_ports::tests::test_list_ports stdout ----
 // Port name: /dev/cu.Bluetooth-Incoming-Port
 // Port name: /dev/cu.usbmodem2101
@@ -18,7 +21,7 @@ pub fn list_ports() -> Vec<Port> {
         match result {
             SpReturn::SP_OK => {
                 let mut i = 0;
-                while !(*port_list.add(i)).is_null() { 
+                while !(*port_list.add(i)).is_null() {
                     let port = *port_list.add(i);
                     let port_name = sp_get_port_name(port);
                     if !port_name.is_null() {
@@ -43,7 +46,9 @@ pub fn list_ports() -> Vec<Port> {
 /// Finds the RPi port by name matching the first device containing "cu.usbmodem"
 pub fn get_rpi_port() -> Result<Port> {
     let ports = list_ports();
-    let result = ports.into_iter().find(|port| port.name.contains("cu.usbmodem"));
+    let result = ports
+        .into_iter()
+        .find(|port| port.name.contains("cu.usbmodem"));
     if let Some(port) = result {
         println!("RPi port selected: {}", port.name);
         Ok(port)
@@ -54,9 +59,11 @@ pub fn get_rpi_port() -> Result<Port> {
 
 pub fn get_all_rpi_ports() -> Vec<Port> {
     let ports = list_ports();
-    ports.into_iter().filter(|port| port.name.contains("cu.usbmodem")).collect()
+    ports
+        .into_iter()
+        .filter(|port| port.name.contains("cu.usbmodem"))
+        .collect()
 }
-
 
 #[cfg(test)]
 mod tests {
