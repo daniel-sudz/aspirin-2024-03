@@ -4,7 +4,7 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::{entry, hal::gpio, pac::Interrupt};
+use rp_pico::{entry, hal::{clocks::ClocksManager, gpio}, pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS}};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -28,7 +28,7 @@ use usb_device::{class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
 
 // Misc
-use core::{borrow::BorrowMut, fmt::Write};
+use core::{borrow::BorrowMut, cell::Cell, fmt::Write, iter::Once, mem::transmute, ops::{Deref, DerefMut}};
 use heapless::String;
 use core::cell::RefCell;
 use critical_section::Mutex;
@@ -64,6 +64,16 @@ static GLOBAL_GPIO: Mutex<RefCell<Option<ButtonPins>>> = Mutex::new(RefCell::new
 
 // Global state for the position of the player
 static GLOBAL_PLAYER_POSITION: Mutex<RefCell<(i32, i32)>> = Mutex::new(RefCell::new((0, 0)));
+
+// Global state for the USB device
+struct UsbSerialContainer<'a, B: usb_device::bus::UsbBus> {
+    serial: SerialPort<'a, B>,
+    usb_dev: UsbDevice<'a, B>,
+}
+
+static mut USB_BUS_ALLOCATOR: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
+static GLOBAL_USB_DEVICE: Mutex<RefCell<Option<UsbSerialContainer<'_, hal::usb::UsbBus>>>> = Mutex::new(RefCell::new(None));
+
 
 /// Entry point to our bare-metal application.
 ///
@@ -127,28 +137,32 @@ fn main() -> ! {
 
     let timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
 
-    // Set up the USB driver
-    let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
+    // Set up the USB and serial driver
+    let usb_bus: UsbBusAllocator<hal::usb::UsbBus> = UsbBusAllocator::new(hal::usb::UsbBus::new(
         pac.USBCTRL_REGS,
         pac.USBCTRL_DPRAM,
         clocks.usb_clock,
         true,
         &mut pac.RESETS,
     ));
-
-    // Set up the USB Communications Class Device driver
-    let mut serial = SerialPort::new(&usb_bus);
-
-    // Create a USB device with a fake VID and PID
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
-        .strings(&[StringDescriptors::default()
-            .manufacturer("Rustbox Studio")
-            .product("Rusty Ports")
-            .serial_number("RustboxController0")])
-        .unwrap()
-        .device_class(2) // from: https://www.usb.org/defined-class-codes
-        .build();
-
+    unsafe {
+        USB_BUS_ALLOCATOR = Some(usb_bus);
+    }
+    let bus_ref = unsafe { USB_BUS_ALLOCATOR.as_ref().unwrap() };
+    let mut serial = SerialPort::new(&bus_ref);
+    let mut usb_dev = UsbDeviceBuilder::new(&bus_ref, UsbVidPid(0x16c0, 0x27dd))
+    .strings(&[StringDescriptors::default()
+        .manufacturer("Rustbox Studio")
+        .product("Rusty Ports")
+        .serial_number("RustboxController0")])
+    .unwrap()
+    .device_class(2) 
+    .build();
+    let mut usb_container = UsbSerialContainer { serial: serial, usb_dev: usb_dev };
+    critical_section::with(|cs| {
+        GLOBAL_USB_DEVICE.borrow(cs).replace(Some(usb_container));
+    });
+    
     // Initialize state variables
     let mut device_state = DeviceState::PendingInit;
     let mut led_state = PinState::High;
@@ -161,37 +175,13 @@ fn main() -> ! {
     let mut last_button_state_transmission_time: u64 = 0;
 
     loop {
+        // wait for interrupt
+        cortex_m::asm::wfi();
+    }
+    /* 
+    loop {
         let current_time = timer.get_counter().ticks();
 
-        // Toggle heartbeat LED
-        if current_time - last_led_transition_time > LED_TOGGLE_DELAY {
-            led_state = match led_state {
-                PinState::High => PinState::Low,
-                PinState::Low => PinState::High,
-            };
-            heartbeat_led
-                .set_state(led_state)
-                .expect("GPIOs should never fail to change stated");
-            last_led_transition_time = timer.get_counter().ticks();
-        }
-
-        // Debug print the current state, along with the RSG LED States
-        if in_debug_mode {
-            let mut debug_text: String<60> = String::new();
-            writeln!(
-                debug_text,
-                "st: {}, r: {}, s: {}, g: {}",
-                device_state as u32,
-                (rsg_led_states.0 == PinState::High) as u8,
-                (rsg_led_states.1 == PinState::High) as u8,
-                (rsg_led_states.2 == PinState::High) as u8
-            )
-            .expect("String buffer has been conservatively allocated to fit full payload");
-
-            // Only possible error is when USB Buffer is full, which just means
-            // that this specific message will be dropped.
-            let _ = serial.write(debug_text.as_bytes());
-        }
 
         // Check for new data
         if usb_dev.poll(&mut [&mut serial]) {
@@ -323,11 +313,12 @@ fn main() -> ! {
             }
         }
     }
+    */
 }
 
 // End of file
 
-
+/// Interrupt handler for button presses
 #[allow(static_mut_refs)]
 #[interrupt]
 fn IO_IRQ_BANK0() {
@@ -368,3 +359,9 @@ fn IO_IRQ_BANK0() {
     });
 }
 
+
+/// Interrupt handler for USB serial
+#[interrupt]
+fn USBCTRL_IRQ() {
+    // Do nothing
+}
