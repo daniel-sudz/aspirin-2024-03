@@ -120,7 +120,10 @@ impl MultiDevice {
             DeviceState::PendingInit => {
                 Commander::run_on_all_commanders(
                     &mut self.commanders,
-                    |commander: &mut Commander| commander.transition_to_pending_start(),
+                    |commander: &mut Commander| {
+                        commander.send_reset_msg()?;
+                        commander.transition_to_pending_start()
+                    },
                 )?;
                 DeviceState::PendingStart
             }
@@ -132,10 +135,11 @@ impl MultiDevice {
                                 &mut self.commanders,
                                 |commander: &mut Commander| {
                                     commander.set_ready_led()?;
+                                    thread::sleep(Duration::from_millis(1300));
                                     commander.set_set_led()?;
-                                    thread::sleep(Duration::from_millis(1000));
+                                    thread::sleep(Duration::from_millis(1300));
                                     commander.set_go_led()?;
-                                    thread::sleep(Duration::from_millis(1000));
+                                    thread::sleep(Duration::from_millis(1300));
                                     commander.set_all_leds_off()?;
                                     commander.transition_to_running()
                                 },

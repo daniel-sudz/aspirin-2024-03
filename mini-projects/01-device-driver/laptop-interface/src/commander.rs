@@ -44,6 +44,11 @@ impl Commander {
         Ok(())
     }
 
+    /// Sends reset message to the device 
+    pub fn send_reset_msg(&self) -> Result<()> {
+        self.serial.send("reset".to_string())
+    }
+
     /// Transitions from DeviceState::PendingInit to DeviceState::PendingStart
     pub fn transition_to_pending_start(&self) -> Result<()> {
         self.serial.send("init controller".to_string())
