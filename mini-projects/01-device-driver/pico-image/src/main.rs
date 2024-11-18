@@ -167,8 +167,8 @@ fn main() -> ! {
         USB_BUS_ALLOCATOR = Some(usb_bus);
     }
     let bus_ref = unsafe { USB_BUS_ALLOCATOR.as_ref().unwrap() };
-    let mut serial = SerialPort::new(&bus_ref);
-    let mut usb_dev = UsbDeviceBuilder::new(&bus_ref, UsbVidPid(0x16c0, 0x27dd))
+    let serial = SerialPort::new(&bus_ref);
+    let usb_dev = UsbDeviceBuilder::new(&bus_ref, UsbVidPid(0x16c0, 0x27dd))
     .strings(&[StringDescriptors::default()
         .manufacturer("Rustbox Studio")
         .product("Rusty Ports")
@@ -176,17 +176,16 @@ fn main() -> ! {
     .unwrap()
     .device_class(2) 
     .build();
-    let mut usb_container = UsbSerialContainer { serial: serial, usb_dev: usb_dev };
+    let usb_container = UsbSerialContainer { serial: serial, usb_dev: usb_dev };
     critical_section::with(|cs| {
         GLOBAL_USB_DEVICE.borrow(cs).replace(Some(usb_container));
     });
     
-    // Initialize state variables
-    let mut led_state = PinState::High;
-    let mut rsg_led_states = (PinState::Low, PinState::Low, PinState::Low);
-    let mut in_debug_mode = false;
-    let mut last_button_state_transmission_time: u64 = 0;
-
+     // enable usb interrupt
+    unsafe {
+        pac::NVIC::unmask(hal::pac::Interrupt::USBCTRL_IRQ);
+        pac::NVIC::unmask(hal::pac::Interrupt::TIMER_IRQ_0);
+    }
     loop {
         // wait for interrupt
         cortex_m::asm::wfi();
@@ -199,19 +198,10 @@ fn main() -> ! {
 #[allow(static_mut_refs)]
 #[interrupt]
 fn IO_IRQ_BANK0() {
-    static mut GPIO_STATE: Option<ButtonPins> = None;
-
-    // Lazily take ownership of the global GPIO state 
-    if GPIO_STATE.is_none() {
-        *GPIO_STATE = critical_section::with(|cs| {
-            GLOBAL_GPIO.borrow(cs).take()
-        });
-    }
-
-    // Check buttons states and update player position
     critical_section::with(|cs| {
-        let mut player_position = GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
-        if let Some(gpios) = GPIO_STATE {
+        // Check buttons states and update player position
+        let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
+        if let Some(gpios) = GLOBAL_GPIO.borrow(cs).borrow_mut().as_mut() {
             if gpios.left.interrupt_status(EdgeLow) {
                 player_position.0 -= 1;
                 player_position.1 += 1;
@@ -233,7 +223,23 @@ fn IO_IRQ_BANK0() {
                 gpios.bottom.clear_interrupt(EdgeLow);
             }
         }
+
+        // Send player position over USB
+        let usb_container = &mut *GLOBAL_USB_DEVICE.borrow(cs).borrow_mut();
+        let state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
+        match state {
+            DeviceState::PendingInit => {}
+            DeviceState::PendingStart => {}
+            DeviceState::Running => {
+                let mut message: String<20> = String::new();
+                writeln!(message, "{:?},{:?}", player_position.0, player_position.1).unwrap();
+                let _ = usb_container.as_mut().unwrap().serial.write(message.as_bytes());
+                let _ = usb_container.as_mut().unwrap().serial.flush();
+            }
+            DeviceState::Complete => {}
+        }
     });
+
 }
 
 
