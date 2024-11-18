@@ -4,7 +4,7 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::{entry, hal::{clocks::ClocksManager, fugit::MicrosDurationU32, gpio, timer::Alarm}, pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS}};
+use rp_pico::{entry, hal::{clocks::ClocksManager, gpio}, pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS}};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -36,7 +36,7 @@ use critical_section::Mutex;
 
 // Enum for Device State Machine
 #[repr(i32)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 enum DeviceState {
     PendingInit = 0,
     PendingStart = 1,
@@ -153,9 +153,7 @@ fn main() -> ! {
     )
     .expect("Clocks should never fail to initialize");
 
-    let mut timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
-    let alarm_interval_us = 100_000;
-    let mut alarm = timer.alarm_0().unwrap();
+    let timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
 
     // Set up the USB and serial driver
     let usb_bus: UsbBusAllocator<hal::usb::UsbBus> = UsbBusAllocator::new(hal::usb::UsbBus::new(
@@ -182,45 +180,19 @@ fn main() -> ! {
     critical_section::with(|cs| {
         GLOBAL_USB_DEVICE.borrow(cs).replace(Some(usb_container));
     });
-
-    // enable usb interrupt
+    
+     // enable usb interrupt
     unsafe {
         pac::NVIC::unmask(hal::pac::Interrupt::USBCTRL_IRQ);
-        pac::NVIC::unmask(hal::pac::Interrupt::IO_IRQ_BANK0);
+        pac::NVIC::unmask(hal::pac::Interrupt::TIMER_IRQ_0);
     }
     loop {
-        //debug_looper();
-        set_leds();
-        //alarm.schedule(MicrosDurationU32::from_ticks(alarm_interval_us)).unwrap();
-        //alarm.enable_interrupt();
         // wait for interrupt
         cortex_m::asm::wfi();
     }
 }
 
-
-/// Sets the leds to the current state
-fn set_leds () {
-    critical_section::with(|cs| {
-        let gpios = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
-        let gpios = gpios.as_mut().unwrap();
-        let _ = gpios.led_red.set_state(gpios.button_states.0);
-        let _ = gpios.led_yellow.set_state(gpios.button_states.1);
-        let _ = gpios.led_green.set_state(gpios.button_states.2);
-    });
-}
-
-fn debug_looper() {
-    critical_section::with(|cs| {
-        let usb_container = &mut *GLOBAL_USB_DEVICE.borrow(cs).borrow_mut();
-        let state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
-        let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
-        let mut debug_str: String<100> = String::new();
-        writeln!(debug_str, "State: {:?}, Position: {:?}\n", state, player_position).unwrap();
-        let _ = usb_container.as_mut().unwrap().serial.write(debug_str.as_bytes());
-        let _ = usb_container.as_mut().unwrap().serial.flush();
-    }); 
-}
+// End of file
 
 /// Interrupt handler for button presses
 #[allow(static_mut_refs)]
@@ -295,6 +267,30 @@ fn USBCTRL_IRQ() {
     if let Some(message) = message {
         process_state_serial_message(message);
     }
+}
+/// Timer interrupt handler
+#[interrupt]
+fn TIMER_IRQ_0() {
+    critical_section::with(|cs| {
+        let device_state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
+        let mut gpios = GLOBAL_GPIO.borrow(cs).borrow_mut();
+        let gpios = gpios.as_mut().unwrap();
+        match device_state {
+            DeviceState::PendingInit => {}
+            DeviceState::PendingStart => {
+                let _ = gpios.led_red.set_state(gpios.button_states.0);
+                let _ = gpios.led_yellow.set_state(gpios.button_states.1);
+                let _ = gpios.led_green.set_state(gpios.button_states.2);
+            }
+            DeviceState::Running => {}
+            DeviceState::Complete => {
+                let _ = gpios.led_red.set_state(PinState::Low);
+                let _ = gpios.led_yellow.set_state(PinState::Low);
+                let _ = gpios.led_green.set_state(PinState::Low);
+                gpios.button_states = (PinState::Low, PinState::Low, PinState::Low);
+            }
+        }
+    });
 }
 
 
