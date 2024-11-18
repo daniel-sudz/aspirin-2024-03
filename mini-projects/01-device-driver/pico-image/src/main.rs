@@ -164,8 +164,8 @@ fn main() -> ! {
         USB_BUS_ALLOCATOR = Some(usb_bus);
     }
     let bus_ref = unsafe { USB_BUS_ALLOCATOR.as_ref().unwrap() };
-    let serial = SerialPort::new(&bus_ref);
-    let usb_dev = UsbDeviceBuilder::new(&bus_ref, UsbVidPid(0x16c0, 0x27dd))
+    let serial = SerialPort::new(bus_ref);
+    let usb_dev = UsbDeviceBuilder::new(bus_ref, UsbVidPid(0x16c0, 0x27dd))
         .strings(&[StringDescriptors::default()
             .manufacturer("Rustbox Studio")
             .product("Rusty Ports")
@@ -173,10 +173,7 @@ fn main() -> ! {
         .unwrap()
         .device_class(2)
         .build();
-    let usb_container = UsbSerialContainer {
-        serial: serial,
-        usb_dev: usb_dev,
-    };
+    let usb_container = UsbSerialContainer { serial, usb_dev };
     critical_section::with(|cs| {
         GLOBAL_USB_DEVICE.borrow(cs).replace(Some(usb_container));
     });
@@ -282,20 +279,17 @@ fn IO_IRQ_BANK0() {
         }
 
         // Update and send positions if DeviceState::Running
-        match state {
-            DeviceState::Running => {
-                player_position.0 += pos_diff.0;
-                player_position.1 += pos_diff.1;
-                let mut message: String<20> = String::new();
-                writeln!(message, "{:?},{:?}", player_position.0, player_position.1).unwrap();
-                let _ = usb_container
-                    .as_mut()
-                    .unwrap()
-                    .serial
-                    .write(message.as_bytes());
-                let _ = usb_container.as_mut().unwrap().serial.flush();
-            }
-            _ => {}
+        if let DeviceState::Running = state {
+            player_position.0 += pos_diff.0;
+            player_position.1 += pos_diff.1;
+            let mut message: String<20> = String::new();
+            writeln!(message, "{:?},{:?}", player_position.0, player_position.1).unwrap();
+            let _ = usb_container
+                .as_mut()
+                .unwrap()
+                .serial
+                .write(message.as_bytes());
+            let _ = usb_container.as_mut().unwrap().serial.flush();
         }
     });
 }
@@ -330,7 +324,7 @@ fn process_state_serial_message(message: &str) {
     critical_section::with(|cs| {
         let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
         let device_state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
-        let gpios: &mut Option<ButtonPins> = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
+        let gpios: &mut Option<ButtonPins> = &mut GLOBAL_GPIO.borrow(cs).borrow_mut();
         match device_state {
             DeviceState::PendingInit => {
                 if message.contains("init controller") {
