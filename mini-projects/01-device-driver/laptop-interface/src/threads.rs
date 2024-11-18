@@ -4,7 +4,6 @@ use parking_lot::RwLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread;
-use std::io::Write;
 
 pub struct BufferedBackgroundSerial {
     serial: Arc<RwLock<Serial>>,
@@ -14,6 +13,7 @@ pub struct BufferedBackgroundSerial {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ButtonStates {
     top_left: bool,
     top_right: bool,

@@ -1,5 +1,5 @@
 use super::{
-    ffi::{sp_get_port_name, sp_list_ports, sp_port, SpReturn},
+    ffi::{sp_get_port_name, sp_list_ports, SpPort, SpReturn},
     types::Port,
 };
 use anyhow::Result;
@@ -12,13 +12,13 @@ use std::ptr;
 // Port name: /dev/cu.usbmodem2101
 pub fn list_ports() -> Vec<Port> {
     unsafe {
-        let mut port_list: *mut *mut sp_port = ptr::null_mut();
+        let mut port_list: *mut *mut SpPort = ptr::null_mut();
         let result: SpReturn = sp_list_ports(&mut port_list);
 
         let mut ports: Vec<Port> = Vec::new();
 
         match result {
-            SpReturn::SP_OK => {
+            SpReturn::SpOK => {
                 let mut i = 0;
                 while !(*port_list.add(i)).is_null() {
                     let port = *port_list.add(i);

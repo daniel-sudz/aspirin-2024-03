@@ -50,6 +50,6 @@ mod tests {
     #[test]
     fn test_receive() {
         let serial = Serial::from_auto_configure().unwrap();
-        let data = serial.receive().unwrap();
+        let _data = serial.receive().unwrap();
     }
 }

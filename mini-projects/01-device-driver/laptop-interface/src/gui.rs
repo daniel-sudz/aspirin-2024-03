@@ -34,6 +34,7 @@ impl Default for GameApp {
     }
 }
 
+#[allow(dead_code)]
 impl GameApp {
     pub fn get_state(&self) -> DeviceState {
         self.device_manager.as_ref().unwrap().get_state()
@@ -100,7 +101,7 @@ impl GameApp {
     }
 
     // Function to compute displacement from positions (time, (x, y))
-    fn compute_displacement(&self, positions: &Vec<(f64, (i32, i32))>) -> Vec<(f64, f64)> {
+    fn compute_displacement(&self, positions: &[(f64, (i32, i32))]) -> Vec<(f64, f64)> {
         positions
             .iter()
             .map(|(t, (x, y))| (*t, ((x.pow(2) + y.pow(2)) as f64).sqrt()))
@@ -201,7 +202,6 @@ impl eframe::App for GameApp {
 
                         if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
                             self.set_controller_input(Some(ControllerInput::StopGame));
-                            println!("{:?}", self.controller_one_pos);
                             self.plot_positions();
                             self.plot_difference();
                             self.controller_one_pos = vec![(0.0, (0, 0))];

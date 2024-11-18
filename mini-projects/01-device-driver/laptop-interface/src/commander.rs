@@ -5,6 +5,7 @@ use std::thread;
 use crate::libserial::types::Port;
 use crate::threads::BufferedBackgroundSerial;
 
+#[allow(dead_code)]
 pub struct Commander {
     serial: BufferedBackgroundSerial,
     pos: (i32, i32),
@@ -12,6 +13,7 @@ pub struct Commander {
 
 unsafe impl Send for Commander {}
 
+#[allow(dead_code)]
 impl Commander {
     pub fn from_auto_configure() -> Result<Self> {
         let serial = Serial::from_auto_configure()?;
@@ -44,7 +46,7 @@ impl Commander {
         Ok(())
     }
 
-    /// Sends reset message to the device 
+    /// Sends reset message to the device
     pub fn send_reset_msg(&self) -> Result<()> {
         self.serial.send("reset".to_string())
     }
@@ -126,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_commander() {
-        let mut commander = Commander::from_auto_configure().unwrap();
+        let commander = Commander::from_auto_configure().unwrap();
         commander.set_debug_mode_off().unwrap();
         commander.transition_to_pending_start().unwrap();
         commander.set_ready_led().unwrap();
