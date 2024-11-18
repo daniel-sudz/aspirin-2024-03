@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::controller_management::{
-    BackgroundMultiDevice, ControllerInput, DeviceState, MultiDevice,
+    BackgroundMultiDevice, ControllerInput, DeviceState,
 };
 use eframe::egui;
 use egui::{Frame, Margin};
@@ -86,13 +86,13 @@ impl GameApp {
             .draw_series(LineSeries::new(data1, &RED))
             .unwrap()
             .label(label1)
-            .legend(|(x, y)| Circle::new((x, y), 3, &RED));
+            .legend(|(x, y)| Circle::new((x, y), 3, RED));
 
         chart
             .draw_series(LineSeries::new(data2, &BLUE))
             .unwrap()
             .label(label2)
-            .legend(|(x, y)| Circle::new((x, y), 3, &BLUE));
+            .legend(|(x, y)| Circle::new((x, y), 3, BLUE));
 
         chart.configure_series_labels().draw().unwrap();
         root.present().unwrap();
@@ -173,7 +173,7 @@ impl eframe::App for GameApp {
                 // device manager initialized
                 Some(device_manager) => match device_manager.get_state() {
                     DeviceState::PendingInit => {
-                        display_welcome(ui, &"Initialized Controllers");
+                        display_welcome(ui, "Initialized Controllers");
                         self.device_manager
                             .as_mut()
                             .unwrap()

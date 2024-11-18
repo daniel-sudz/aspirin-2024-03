@@ -1,11 +1,10 @@
 use super::libserial::serial::Serial;
 use anyhow::Result;
 use parking_lot::RwLock;
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, AtomicI32};
-use std::sync::{mpsc, Arc};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::thread;
-use std::{io, io::Write};
+use std::io::Write;
 
 pub struct BufferedBackgroundSerial {
     serial: Arc<RwLock<Serial>>,

@@ -1,16 +1,14 @@
 use anyhow::Result;
-use libc::strlen;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_void};
-use std::ptr;
+use std::ffi::CString;
+use std::os::raw::c_void;
 
 use crate::libserial::ffi::{
-    sp_blocking_read, sp_blocking_read_next, sp_blocking_write, sp_drain, sp_open, sp_set_baudrate,
+    sp_blocking_read, sp_blocking_write, sp_drain, sp_open, sp_set_baudrate,
     sp_set_bits, sp_set_flowcontrol, sp_set_parity, sp_set_stopbits, SpFlowControl, SpMode,
     SpParity,
 };
 
-use super::ffi::{sp_port, SpReturn};
+use super::ffi::SpReturn;
 use super::types::Port;
 
 pub fn check(result: SpReturn) -> Result<()> {
@@ -22,12 +20,12 @@ pub fn check(result: SpReturn) -> Result<()> {
 
 pub fn configure_send_receive(port: &Port) -> Result<()> {
     unsafe {
-        let _ = check(sp_open(port.handle, SpMode::SP_MODE_READ_WRITE))?;
-        let _ = check(sp_set_baudrate(port.handle, 115200))?;
-        let _ = check(sp_set_bits(port.handle, 8))?;
-        let _ = check(sp_set_parity(port.handle, SpParity::SP_PARITY_NONE))?;
-        let _ = check(sp_set_stopbits(port.handle, 1))?;
-        let _ = check(sp_set_flowcontrol(
+        check(sp_open(port.handle, SpMode::SP_MODE_READ_WRITE))?;
+        check(sp_set_baudrate(port.handle, 115200))?;
+        check(sp_set_bits(port.handle, 8))?;
+        check(sp_set_parity(port.handle, SpParity::SP_PARITY_NONE))?;
+        check(sp_set_stopbits(port.handle, 1))?;
+        check(sp_set_flowcontrol(
             port.handle,
             SpFlowControl::SP_FLOWCONTROL_NONE,
         ))?;
@@ -46,7 +44,7 @@ pub fn send(port: &Port, data: String) -> Result<()> {
     if bytes_written < 0 {
         Err(anyhow::anyhow!("Error sending data: {}", bytes_written))
     } else {
-        let _ = unsafe { check(sp_drain(port.handle)) }?;
+        unsafe { check(sp_drain(port.handle)) }?;
         println!("Sent {} bytes", bytes_written);
         Ok(())
     }
@@ -90,9 +88,9 @@ pub fn receive(port: &Port) -> Result<String> {
 }
 
 mod tests {
-    use crate::libserial::list_ports::get_rpi_port;
+    
 
-    use super::*;
+    
 
     #[test]
     fn test_send() {

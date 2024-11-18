@@ -1,6 +1,5 @@
 use crate::libserial::serial::Serial;
 use anyhow::Result;
-use rayon::prelude::*;
 use std::thread;
 
 use crate::libserial::types::Port;

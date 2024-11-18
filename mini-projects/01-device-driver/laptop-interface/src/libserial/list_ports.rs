@@ -1,10 +1,9 @@
 use super::{
-    ffi::{sp_free_port_list, sp_get_port_name, sp_list_ports, sp_port, SpReturn},
+    ffi::{sp_get_port_name, sp_list_ports, sp_port, SpReturn},
     types::Port,
 };
 use anyhow::Result;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int};
+use std::ffi::CStr;
 use std::ptr;
 
 // Example output:

@@ -1,8 +1,6 @@
 use crate::commander::Commander;
 use crate::libserial::list_ports::get_all_rpi_ports;
-use crate::libserial::types::Port;
 
-use super::libserial::serial::Serial;
 use anyhow::Result;
 use parking_lot::RwLock;
 use std::sync::atomic::AtomicBool;
@@ -98,7 +96,7 @@ impl MultiDevice {
         let commanders = match ports.len().cmp(&num_devices) {
             std::cmp::Ordering::Equal => ports
                 .into_iter()
-                .map(|port| Commander::from_port(port))
+                .map(Commander::from_port)
                 .collect(),
             std::cmp::Ordering::Less => Err(anyhow::anyhow!(
                 "Not enough devices found - need {}, found {}",
@@ -215,7 +213,7 @@ impl MultiDevice {
     }
 
     pub fn get_state(&self) -> DeviceState {
-        self.state.clone()
+        self.state
     }
 }
 

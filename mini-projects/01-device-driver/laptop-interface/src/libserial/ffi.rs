@@ -1,8 +1,4 @@
-use anyhow::Result;
-use libc::strlen;
-use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_void};
-use std::ptr;
 
 /// FFI bindings for libserial
 /// https://sigrok.org/api/libserialport/unstable/a00008.html
