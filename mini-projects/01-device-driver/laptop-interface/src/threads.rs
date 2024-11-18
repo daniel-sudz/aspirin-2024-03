@@ -35,48 +35,6 @@ impl BufferedBackgroundSerial {
         *self.pos.read()
     }
 
-    fn button_states_from_message(message: &String) -> ButtonStates {
-        let raw = message.parse::<u8>().unwrap();
-        ButtonStates {
-            top_left: (raw & (1 << 0)) != 0,
-            top_right: (raw & (1 << 3)) != 0,
-            bottom_left: (raw & (1 << 1)) != 0,
-            bottom_right: (raw & (1 << 2)) != 0,
-        }
-    }
-
-    fn button_rising_edge(last_states: &ButtonStates, current_states: &ButtonStates) -> ButtonStates {
-        ButtonStates {
-            top_left: last_states.top_left && !current_states.top_left,
-            top_right: last_states.top_right && !current_states.top_right,
-            bottom_left: last_states.bottom_left && !current_states.bottom_left,
-            bottom_right: last_states.bottom_right && !current_states.bottom_right,
-        }
-    }
-
-    pub fn update(pos: &Arc<RwLock<(i32, i32)>>, last_states: &ButtonStates, current_states: &ButtonStates) {
-        let rising_edges = Self::button_rising_edge(last_states, current_states);
-
-        //println!("last_states: {:?}, current_states: {:?}, rising_edges: {:?}", last_states, current_states, rising_edges);
-
-        if rising_edges.top_left {
-            pos.write().0 -= 1;
-            pos.write().1 += 1;
-        }
-        if rising_edges.top_right {
-            pos.write().0 += 1;
-            pos.write().1 += 1;
-        }
-        if rising_edges.bottom_left {
-            pos.write().0 -= 1;
-            pos.write().1 -= 1;
-        }
-        if rising_edges.bottom_right {
-            pos.write().0 += 1;
-            pos.write().1 -= 1;
-        }
-    }
-
     /// Creates a new BufferedBackgroundSerial instance from a Serial instance
     pub fn from_serial(serial: Serial) -> Self {
         let mut s = Self {
@@ -91,13 +49,6 @@ impl BufferedBackgroundSerial {
         let pos = s.pos.clone();
         let join_handle = {
             thread::Builder::new().name("buffered_background_serial".to_string()).spawn(move || {
-                let mut last_states = ButtonStates {
-                    top_left: false,
-                    top_right: false,
-                    bottom_left: false,
-                    bottom_right: false,
-                };
-
                 loop {
                     // exit thread if enable is false
                     if !enable.load(std::sync::atomic::Ordering::Relaxed) {
@@ -108,11 +59,14 @@ impl BufferedBackgroundSerial {
                     let received_data = serial.read().receive();
                     match received_data {
                     Ok(data) => {
-                        if data.bytes().len() == 1 || data.bytes().len() == 2 {
-                            let current_states = Self::button_states_from_message(&data);
-                            Self::update(&pos, &last_states, &current_states);
-                            println!("pos inside: {:?}", pos);
-                            last_states = current_states;
+                        if data.contains(",") {
+                            let split = data.split(",").collect::<Vec<&str>>();
+                            if split.len() == 2 {
+                                let x = split[0].parse::<i32>().unwrap();
+                                let y = split[1].parse::<i32>().unwrap();
+                                *pos.write() = (x, y);
+                                println!("pos inside: {:?}", pos);
+                            }
                         }
                     }
                     Err(e) => {
