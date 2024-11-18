@@ -80,8 +80,8 @@ struct UsbSerialContainer<'a, B: usb_device::bus::UsbBus> {
 
 static mut USB_BUS_ALLOCATOR: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
 static GLOBAL_USB_DEVICE: Mutex<RefCell<Option<UsbSerialContainer<'_, hal::usb::UsbBus>>>> = Mutex::new(RefCell::new(None));
-
 static GLOBAL_DEVICE_STATE: Mutex<RefCell<DeviceState>> = Mutex::new(RefCell::new(DeviceState::PendingInit));
+static GLOBAL_TIMER: Mutex<RefCell<Option<hal::Timer>>> = Mutex::new(RefCell::new(None));
 
 
 /// Entry point to our bare-metal application.
@@ -153,9 +153,10 @@ fn main() -> ! {
     )
     .expect("Clocks should never fail to initialize");
 
-    let mut timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
-    let alarm_interval_us = 100_000;
-    let mut alarm = timer.alarm_0().unwrap();
+    let timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+    critical_section::with(|cs| {
+        GLOBAL_TIMER.borrow(cs).replace(Some(timer));
+    });
 
     // Set up the USB and serial driver
     let usb_bus: UsbBusAllocator<hal::usb::UsbBus> = UsbBusAllocator::new(hal::usb::UsbBus::new(
@@ -189,11 +190,7 @@ fn main() -> ! {
         pac::NVIC::unmask(hal::pac::Interrupt::IO_IRQ_BANK0);
     }
     loop {
-        //debug_looper();
         set_leds();
-        //alarm.schedule(MicrosDurationU32::from_ticks(alarm_interval_us)).unwrap();
-        //alarm.enable_interrupt();
-        // wait for interrupt
         cortex_m::asm::wfi();
     }
 }
@@ -226,33 +223,55 @@ fn debug_looper() {
 #[allow(static_mut_refs)]
 #[interrupt]
 fn IO_IRQ_BANK0() {
+    static mut DEBOUNCE_LEFT: u64 = 0;
+    static mut DEBOUNCE_TOP: u64 = 0;
+    static mut DEBOUNCE_RIGHT: u64 = 0;
+    static mut DEBOUNCE_BOTTOM: u64 = 0;
+
     critical_section::with(|cs| {
         let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
         let usb_container = &mut *GLOBAL_USB_DEVICE.borrow(cs).borrow_mut();
         let state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
         let gpios = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
         let gpios = gpios.as_mut().unwrap();
+        let timer = &mut *GLOBAL_TIMER.borrow(cs).borrow_mut();
+        let timer = timer.as_mut().unwrap();
+        
+        let current_time = timer.get_counter().ticks();
+        let debounce_time = 50_000;
 
         // Calculate position difference
         let mut pos_diff = (0, 0);
         if gpios.left.interrupt_status(EdgeLow) {
-            pos_diff.0 += 1;
-            pos_diff.1 += 1;
+            if current_time - *DEBOUNCE_LEFT > debounce_time {
+                pos_diff.0 += 1;
+                pos_diff.1 += 1;
+                *DEBOUNCE_LEFT = current_time;
+            }
             gpios.left.clear_interrupt(EdgeLow);
         }
         if gpios.top.interrupt_status(EdgeLow) {
-            pos_diff.0 -= 1;
-            pos_diff.1 -= 1;
+            if current_time - *DEBOUNCE_TOP > debounce_time {
+                pos_diff.0 -= 1;
+                pos_diff.1 -= 1;
+                *DEBOUNCE_TOP = current_time;
+            }
             gpios.top.clear_interrupt(EdgeLow);
         }
         if gpios.right.interrupt_status(EdgeLow) {
-            pos_diff.0 += 1;
-            pos_diff.1 -= 1;
+            if current_time - *DEBOUNCE_RIGHT > debounce_time {
+                pos_diff.0 += 1;
+                pos_diff.1 -= 1;
+                *DEBOUNCE_RIGHT = current_time;
+            }
             gpios.right.clear_interrupt(EdgeLow);
         }
         if gpios.bottom.interrupt_status(EdgeLow) {
-            pos_diff.0 -= 1;
-            pos_diff.1 += 1;
+            if current_time - *DEBOUNCE_BOTTOM > debounce_time {
+                pos_diff.0 -= 1;
+                pos_diff.1 += 1;
+                *DEBOUNCE_BOTTOM = current_time;
+            }
             gpios.bottom.clear_interrupt(EdgeLow);
         }
 
