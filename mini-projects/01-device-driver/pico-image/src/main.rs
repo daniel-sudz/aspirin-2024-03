@@ -300,12 +300,16 @@ fn USBCTRL_IRQ() {
 
 fn process_state_serial_message(message: &str) {
     critical_section::with(|cs| {
+        let player_position = &mut *GLOBAL_PLAYER_POSITION.borrow(cs).borrow_mut();
         let device_state = &mut *GLOBAL_DEVICE_STATE.borrow(cs).borrow_mut();
         let gpios: &mut Option<ButtonPins> = &mut *GLOBAL_GPIO.borrow(cs).borrow_mut();
         match device_state {
             DeviceState::PendingInit => {
                 if message.contains("init controller") {
                     *device_state = DeviceState::PendingStart;
+                }
+                else if message.contains("reset") {
+                    *device_state = DeviceState::PendingInit;
                 }
             }
             DeviceState::PendingStart => {
@@ -323,16 +327,29 @@ fn process_state_serial_message(message: &str) {
                 if message.contains("start controller") {
                     *device_state = DeviceState::Running;
                 }
+                else if message.contains("reset") {
+                    *device_state = DeviceState::PendingInit;
+                }
             }
             DeviceState::Running => {
                 if message.contains("stop controller") {
                     *device_state = DeviceState::Complete;
+                }
+                else if message.contains("reset") {
+                    *device_state = DeviceState::PendingInit;
                 }
             }
             DeviceState::Complete => {
                 if message.contains("reset") {
                     *device_state = DeviceState::PendingInit;
                 }
+                else if message.contains("restart") {
+                    *device_state = DeviceState::PendingStart;
+                }
+                else if message.contains("start controller") {
+                    *device_state = DeviceState::Running;
+                }
+                *player_position = (0, 0);
             }
         }
     });
