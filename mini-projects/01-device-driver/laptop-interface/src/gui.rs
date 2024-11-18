@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use crate::controller_management::{
-    BackgroundMultiDevice, ControllerInput, DeviceState,
-};
+use crate::controller_management::{BackgroundMultiDevice, ControllerInput, DeviceState};
 use eframe::egui;
 use egui::{Frame, Margin};
 use plotters::{
@@ -14,10 +12,12 @@ use plotters::{
 };
 
 use std::path::Path;
+use std::time::Instant;
 
 pub struct GameApp {
     device_manager: Option<BackgroundMultiDevice>,
     winner: Option<String>,
+    time: Instant,
     controller_one_pos: Vec<(f64, (i32, i32))>,
     controller_two_pos: Vec<(f64, (i32, i32))>,
 }
@@ -27,6 +27,7 @@ impl Default for GameApp {
         Self {
             device_manager: None,
             winner: None,
+            time: Instant::now(),
             controller_one_pos: vec![(0.0, (0, 0))],
             controller_two_pos: vec![(0.0, (0, 0))],
         }
@@ -113,8 +114,8 @@ impl GameApp {
         self.plot_data(
             "positions.png",
             "Position vs Time",
+            "Controller 0",
             "Controller 1",
-            "Controller 2",
             positions_one,
             positions_two,
         );
@@ -140,8 +141,8 @@ impl GameApp {
         self.plot_data(
             "difference.png",
             "Displacement Difference vs Time",
+            "Controller 0",
             "Controller 1",
-            "Controller 2",
             difference_one,
             difference_two,
         );
@@ -188,16 +189,23 @@ impl eframe::App for GameApp {
                         }
                     }
                     DeviceState::Running => {
+                        if self.controller_one_pos.len() == 1 {
+                            self.time = Instant::now();
+                        }
+
                         display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
                         self.controller_one_pos
-                            .push((ctx.input(|input| input.time), self.get_pos_player_one()));
+                            .push((self.time.elapsed().as_secs_f64(), self.get_pos_player_one()));
                         self.controller_two_pos
-                            .push((ctx.input(|input| input.time), self.get_pos_player_two()));
+                            .push((self.time.elapsed().as_secs_f64(), self.get_pos_player_two()));
 
                         if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
                             self.set_controller_input(Some(ControllerInput::StopGame));
+                            println!("{:?}", self.controller_one_pos);
                             self.plot_positions();
                             self.plot_difference();
+                            self.controller_one_pos = vec![(0.0, (0, 0))];
+                            self.controller_two_pos = vec![(0.0, (0, 0))];
                         } else {
                             self.set_controller_input(None);
                         }
@@ -216,41 +224,6 @@ impl eframe::App for GameApp {
             }
         });
         ctx.request_repaint_after(Duration::from_millis(10)); // Request repaint every frame
-
-        /*
-
-            match self.get_state() {
-            DeviceState::PendingInit => {
-                display_welcome(ui);
-                match MultiDevice::from_auto_configure(2) {
-                    Ok(device_manager) => self.device_manager = Some(device_manager),
-                    Err(e) => {
-                        eprintln!("Error initializing devices: {}", e);
-                    }
-                }
-            }
-            DeviceState::PendingStart => {
-                display_starting(ui);
-                if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
-                    self.state = DeviceState::Running;
-                }
-            }
-            DeviceState::Running => {
-                display_running(ui, self.controller_one_pos, self.controller_two_pos);
-                if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
-                    self.state = DeviceState::Complete;
-                }
-            }
-            DeviceState::Complete => {
-                display_complete(ui, &self.winner);
-                if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
-                    self.state = DeviceState::PendingStart;
-                } else if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
-                    self.state = DeviceState::PendingInit;
-                }
-            }
-        });
-         */
     }
 }
 

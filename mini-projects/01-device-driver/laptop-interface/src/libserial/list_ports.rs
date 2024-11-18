@@ -47,7 +47,7 @@ pub fn get_rpi_port() -> Result<Port> {
     let ports = list_ports();
     let result = ports
         .into_iter()
-        .find(|port| port.name.contains("cu.usbmodem"));
+        .find(|port| port.name.contains("cu.usbmodem") || port.name.contains("ttyACM"));
     if let Some(port) = result {
         println!("RPi port selected: {}", port.name);
         Ok(port)
@@ -60,7 +60,7 @@ pub fn get_all_rpi_ports() -> Vec<Port> {
     let ports = list_ports();
     ports
         .into_iter()
-        .filter(|port| port.name.contains("cu.usbmodem"))
+        .filter(|port| port.name.contains("cu.usbmodem") || port.name.contains("ttyACM"))
         .collect()
 }
 
