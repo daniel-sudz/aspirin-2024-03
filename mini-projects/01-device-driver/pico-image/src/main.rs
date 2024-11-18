@@ -4,11 +4,7 @@
 #![no_main]
 
 // The macro for our start-up function
-use rp_pico::{
-    entry,
-    hal::{clocks::ClocksManager, fugit::MicrosDurationU32, gpio, timer::Alarm},
-    pac::{Interrupt, USBCTRL_DPRAM, USBCTRL_REGS},
-};
+use rp_pico::{entry, hal::gpio};
 
 // Ensure we halt the program on panic (if we don't mention this crate it won't
 // be linked)
@@ -21,7 +17,7 @@ use rp_pico::hal::pac::interrupt;
 
 // A shorter alias for the Hardware Abstraction Layer, which provides
 // higher-level drivers.
-use embedded_hal::digital::{InputPin, OutputPin, PinState};
+use embedded_hal::digital::{OutputPin, PinState};
 use rp_pico::hal;
 use rp_pico::hal::gpio::Interrupt::EdgeLow;
 use rp_pico::hal::Sio;
@@ -33,14 +29,7 @@ use usbd_serial::SerialPort;
 
 // Misc
 use core::cell::RefCell;
-use core::{
-    borrow::BorrowMut,
-    cell::Cell,
-    fmt::Write,
-    iter::Once,
-    mem::transmute,
-    ops::{Deref, DerefMut},
-};
+use core::fmt::Write;
 use critical_section::Mutex;
 use heapless::String;
 
@@ -53,10 +42,6 @@ enum DeviceState {
     Running = 2,
     Complete = 3,
 }
-
-// Heartbeat LED Delay
-const LED_TOGGLE_DELAY: u64 = 500_000;
-const SERIAL_TX_PERIOD: u64 = 100_000;
 
 // Type our button pins
 type LeftButtonType = gpio::Pin<gpio::bank0::Gpio13, gpio::FunctionSioInput, gpio::PullDown>;
@@ -113,16 +98,16 @@ fn main() -> ! {
     );
 
     // LEDs
-    let mut heartbeat_led = pins.led.into_push_pull_output();
-    let mut red_led: RedLedType = pins.gpio18.into_push_pull_output();
-    let mut yellow_led: YellowLedType = pins.gpio17.into_push_pull_output();
-    let mut green_led: GreenLedType = pins.gpio16.into_push_pull_output();
+    let _heartbeat_led = pins.led.into_push_pull_output();
+    let red_led: RedLedType = pins.gpio18.into_push_pull_output();
+    let yellow_led: YellowLedType = pins.gpio17.into_push_pull_output();
+    let green_led: GreenLedType = pins.gpio16.into_push_pull_output();
 
     // Define buttons
-    let mut left_button: LeftButtonType = pins.gpio13.into_pull_down_input();
-    let mut top_button: TopButtonType = pins.gpio15.into_pull_down_input();
-    let mut bottom_button: BottomButtonType = pins.gpio14.into_pull_down_input();
-    let mut right_button: RightButtonType = pins.gpio12.into_pull_down_input();
+    let left_button: LeftButtonType = pins.gpio13.into_pull_down_input();
+    let top_button: TopButtonType = pins.gpio15.into_pull_down_input();
+    let bottom_button: BottomButtonType = pins.gpio14.into_pull_down_input();
+    let right_button: RightButtonType = pins.gpio12.into_pull_down_input();
 
     // Enable interrupts on the buttons
     left_button.set_interrupt_enabled(EdgeLow, true);
@@ -218,6 +203,7 @@ fn set_leds() {
     });
 }
 
+#[allow(dead_code)]
 fn debug_looper() {
     critical_section::with(|cs| {
         let usb_container = &mut *GLOBAL_USB_DEVICE.borrow(cs).borrow_mut();
