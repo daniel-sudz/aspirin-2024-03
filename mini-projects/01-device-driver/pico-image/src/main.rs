@@ -318,7 +318,7 @@ fn process_state_serial_message(message: &str) {
                 } else if message.contains("set set led") {
                     gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::High, PinState::Low);
                 } else if message.contains("set go led") {
-                    gpios.as_mut().unwrap().button_states = (PinState::Low, PinState::High, PinState::Low);
+                    gpios.as_mut().unwrap().button_states = (PinState::High, PinState::Low, PinState::Low);
                 } else if message.contains("set all leds") {
                     gpios.as_mut().unwrap().button_states = (PinState::High, PinState::High, PinState::High);
                 } else if message.contains("clear all leds") {
