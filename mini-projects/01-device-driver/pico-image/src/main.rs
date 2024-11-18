@@ -265,7 +265,7 @@ fn IO_IRQ_BANK0() {
         if gpios.left.interrupt_status(EdgeLow) {
             if current_time - *DEBOUNCE_LEFT > debounce_time {
                 pos_diff.0 += 1;
-                pos_diff.1 += 1;
+                pos_diff.1 -= 1;
                 *DEBOUNCE_LEFT = current_time;
             }
             gpios.left.clear_interrupt(EdgeLow);
@@ -281,7 +281,7 @@ fn IO_IRQ_BANK0() {
         if gpios.right.interrupt_status(EdgeLow) {
             if current_time - *DEBOUNCE_RIGHT > debounce_time {
                 pos_diff.0 += 1;
-                pos_diff.1 -= 1;
+                pos_diff.1 += 1;
                 *DEBOUNCE_RIGHT = current_time;
             }
             gpios.right.clear_interrupt(EdgeLow);
