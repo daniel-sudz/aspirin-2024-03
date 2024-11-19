@@ -403,8 +403,7 @@ fn reset_position() {
         if let Some(usb_container) = GLOBAL_USB_DEVICE.borrow(cs).borrow_mut().as_mut() {
             // Prepare the reset message (0,0) position
             let mut message: String<20> = String::new();
-            writeln!(message, "0,0").unwrap(); // Send position 0,0
-                                               // Send the reset position via serial
+            writeln!(message, "0,0").unwrap();
             let _ = usb_container.serial.write(message.as_bytes());
             let _ = usb_container.serial.flush();
         }

@@ -10,6 +10,8 @@ use crate::libserial::ffi::{
 use super::ffi::SpReturn;
 use super::types::Port;
 
+/// Checks the result of a serial port operation and returns `Ok(())` if successful.
+/// If the operation fails, it returns an error with a description of the failure.
 pub fn check(result: SpReturn) -> Result<()> {
     match result {
         SpReturn::SpOK => Ok(()),
@@ -17,6 +19,11 @@ pub fn check(result: SpReturn) -> Result<()> {
     }
 }
 
+/// Configures the serial port for communication by setting parameters such as
+/// baud rate, data bits, parity, stop bits, and flow control.
+///
+/// # Arguments
+/// * `port` - Reference to the serial port to configure.
 pub fn configure_send_receive(port: &Port) -> Result<()> {
     unsafe {
         check(sp_open(port.handle, SpMODE::SpModeReadWrite))?;
@@ -33,6 +40,14 @@ pub fn configure_send_receive(port: &Port) -> Result<()> {
     Ok(())
 }
 
+/// Sends data to the serial port.
+///
+/// # Arguments
+/// * `port` - Reference to the serial port to send data to.
+/// * `data` - The string data to be sent.
+///
+/// Converts the string data to a C-compatible string, writes it to the serial port,
+/// and ensures all data is flushed to the port.
 pub fn send(port: &Port, data: String) -> Result<()> {
     let c_data = CString::new(data.as_str())?;
     let data_ptr = c_data.as_ptr() as *const c_void;
@@ -49,6 +64,16 @@ pub fn send(port: &Port, data: String) -> Result<()> {
     }
 }
 
+/// Receives data from the serial port.
+///
+/// Reads bytes from the serial port into a buffer until a newline character
+/// is encountered or no more data is available.
+///
+/// # Arguments
+/// * `port` - Reference to the serial port to receive data from.
+///
+/// # Returns
+/// A `String` containing the received data.
 pub fn receive(port: &Port) -> Result<String> {
     let mut buffer = [0u8; 1024];
     let mut buffer_idx = 0;
@@ -64,24 +89,26 @@ pub fn receive(port: &Port) -> Result<String> {
         };
         match bytes_read {
             0 => {
+                // No data received, break the loop.
                 break;
             }
             _ => {
-                // check for newline break
+                // Check for newline character (indicating end of message).
                 match buffer[buffer_idx] {
                     10 => {
                         break;
                     }
                     _ => {
+                        // Continue reading, increment buffer index.
                         buffer_idx += 1;
                     }
                 }
             }
         }
     }
+    // Convert the received bytes into a string, trimming any trailing whitespace.
     let result = String::from_utf8_lossy(&buffer[..buffer_idx])
         .trim()
         .to_string();
-    //println!("total read: {} result: {}", buffer_idx, result);
     Ok(result)
 }

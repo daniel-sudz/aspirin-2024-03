@@ -14,6 +14,7 @@ use plotters::{
 use std::path::Path;
 use std::time::Instant;
 
+// Struct representing the main application, managing controller states and game logic
 pub struct GameApp {
     device_manager: Option<BackgroundMultiDevice>,
     winner: Option<String>,
@@ -22,6 +23,7 @@ pub struct GameApp {
     controller_two_pos: Vec<(f64, (i32, i32))>,
 }
 
+// Default configuration for GameApp, initializing fields
 impl Default for GameApp {
     fn default() -> Self {
         Self {
@@ -64,14 +66,17 @@ impl GameApp {
         let width = 800;
         let height = 600;
 
+        // Create a directory for storing plot images
         let folder = Path::new("plots");
         std::fs::create_dir_all(folder).expect("Failed to create folder");
         let file_path = folder.join(filename);
 
+        // Initialize the drawing area for the plot
         let drawing_area = BitMapBackend::new(&file_path, (width, height)).into_drawing_area();
         drawing_area.fill(&WHITE).unwrap();
         let root = drawing_area;
 
+        // Build and configure the chart, including axes and labels
         let mut chart = ChartBuilder::on(&root)
             .caption(title, ("Arial", 20))
             .x_label_area_size(30)
@@ -84,6 +89,7 @@ impl GameApp {
 
         chart.configure_mesh().draw().unwrap();
 
+        // Plot data for controller one (red) and controller two (blue)
         chart
             .draw_series(LineSeries::new(data1, &RED))
             .unwrap()
@@ -160,6 +166,7 @@ impl GameApp {
 }
 
 impl eframe::App for GameApp {
+    // Update method for the eframe application, called every frame
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             match &mut self.device_manager {
@@ -190,17 +197,20 @@ impl eframe::App for GameApp {
                         }
                     }
                     DeviceState::Running => {
+                        // Initialize the game timer when the first position is recorded
                         if self.controller_one_pos.len() == 1 {
                             self.time = Instant::now();
                         }
 
                         display_running(ui, self.get_pos_player_one(), self.get_pos_player_two());
+                        // Record the current positions with elapsed time for both players
                         self.controller_one_pos
                             .push((self.time.elapsed().as_secs_f64(), self.get_pos_player_one()));
                         self.controller_two_pos
                             .push((self.time.elapsed().as_secs_f64(), self.get_pos_player_two()));
 
                         if ctx.input(|input| input.key_pressed(egui::Key::Space)) {
+                            // Stop the game and generate plots
                             self.set_controller_input(Some(ControllerInput::StopGame));
                             self.plot_positions();
                             self.plot_difference();
@@ -227,6 +237,7 @@ impl eframe::App for GameApp {
     }
 }
 
+// Display the welcome screen
 fn display_welcome(ui: &mut egui::Ui, intialization_text: &str) {
     Frame::default()
         .inner_margin(Margin::same(225.0))
@@ -242,10 +253,12 @@ fn display_welcome(ui: &mut egui::Ui, intialization_text: &str) {
         });
 }
 
+// Displays the "starting" screen when the game is about to begin
 fn display_starting(ui: &mut egui::Ui) {
     Frame::default()
         .inner_margin(Margin::same(225.0))
         .show(ui, |ui| {
+            // Center the content vertically
             ui.vertical_centered(|ui| {
                 ui.add(egui::Label::new(
                     egui::RichText::new("Welcome").size(60.0).strong(),
@@ -268,6 +281,7 @@ fn display_starting(ui: &mut egui::Ui) {
         });
 }
 
+// Displays the "running" screen while the game is in progress
 fn display_running(
     ui: &mut egui::Ui,
     controller_one_pos: (i32, i32),
@@ -276,10 +290,12 @@ fn display_running(
     Frame::default()
         .inner_margin(Margin::same(60.0))
         .show(ui, |ui| {
+            // Create a grid layout to display controller positions
             egui::Grid::new("controllers_grid")
                 .num_columns(2)
                 .spacing([0.0, 100.0])
                 .show(ui, |ui| {
+                    // Add headers for both controllers
                     ui.add(egui::Label::new(
                         egui::RichText::new("Controller 0").size(40.0).strong(),
                     ));
@@ -290,6 +306,7 @@ fn display_running(
                     });
                     ui.end_row();
 
+                    // Add the current position for both controllers
                     ui.add(egui::Label::new(
                         egui::RichText::new(format!("{:?}", controller_one_pos)).size(40.0),
                     ));
@@ -301,6 +318,7 @@ fn display_running(
                         ui.end_row();
                     });
                 });
+            // Add a message at the bottom to stop the game
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 ui.add(egui::Label::new(
                     egui::RichText::new("Press Space to stop")
@@ -321,6 +339,7 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
                     egui::RichText::new("Congrats!").size(60.0).strong(),
                 ));
 
+                // Determine the winner or indicate a draw
                 let winner = match winner {
                     Some(winner) => format!("The winner is {winner}").to_string(),
                     None => "It is a Draw".to_string(),
@@ -331,6 +350,8 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
                 ));
             });
             ui.add_space(50.0);
+
+            // Add information about the generated plots
             ui.add(egui::Label::new(egui::RichText::new(
                 "Check out plots/positions.png and plots/difference.png for data about your round",
             ).size(20.0)));
@@ -352,6 +373,7 @@ fn display_complete(ui: &mut egui::Ui, winner: &Option<String>) {
         });
 }
 
+// Calculates the winner based on the positions of the controllers
 fn calculate_winner(
     controller_one_pos: (i32, i32),
     controller_two_pos: (i32, i32),

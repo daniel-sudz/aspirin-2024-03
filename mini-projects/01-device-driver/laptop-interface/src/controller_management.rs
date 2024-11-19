@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+// Enum to represent the different states of a device
 #[derive(PartialEq, Clone, Copy)]
 pub enum DeviceState {
     PendingInit = 0,
@@ -16,6 +17,7 @@ pub enum DeviceState {
     Complete = 3,
 }
 
+// Enum to represent the possible controller inputs for managing device state
 #[derive(PartialEq, Clone)]
 pub enum ControllerInput {
     ResetGame,
@@ -24,11 +26,13 @@ pub enum ControllerInput {
     StopGame,
 }
 
+// Struct representing the state of multiple devices
 pub struct MultiDevice {
     state: DeviceState,
     commanders: Vec<Commander>,
 }
 
+// Struct for managing multi-device operations in the background
 pub struct BackgroundMultiDevice {
     state: Arc<RwLock<DeviceState>>,
     pos: Arc<RwLock<Vec<(i32, i32)>>>,
@@ -47,8 +51,12 @@ impl BackgroundMultiDevice {
     pub fn set_controller_input(&self, controller_input: Option<ControllerInput>) {
         *self.controller_input.write() = controller_input;
     }
+
+    // Method to automatically configure the multi-device setup
     pub fn from_auto_configure(num_devices: usize) -> Result<Self> {
         let mut multi_device = MultiDevice::from_auto_configure(num_devices)?;
+
+        // Initialize shared resources using RwLock and AtomicBool
         let state = Arc::new(RwLock::new(multi_device.state));
         let controller_input = Arc::new(RwLock::new(None));
         let pos = Arc::new(RwLock::new(vec![(0, 0); num_devices]));
@@ -61,10 +69,13 @@ impl BackgroundMultiDevice {
             thread: None,
         };
 
+        // Capture references to shared variables for background thread closure
         let state = background_multidevice.state.clone();
         let pos = background_multidevice.pos.clone();
         let controller_input = background_multidevice.controller_input.clone();
         let enable = background_multidevice.enable.clone();
+
+        // Spawn background thread to continually perform actions based on state
         let thread = thread::spawn(move || loop {
             if enable.load(std::sync::atomic::Ordering::Relaxed) {
                 let controller_input_value = controller_input.read().clone();
@@ -112,6 +123,7 @@ impl MultiDevice {
         })
     }
 
+    // Method to perform state transitions based on the controller input
     pub fn state_action(&mut self, input: &Option<ControllerInput>) -> Result<()> {
         self.state = match self.state {
             DeviceState::PendingInit => {
@@ -125,6 +137,7 @@ impl MultiDevice {
                 DeviceState::PendingStart
             }
             DeviceState::PendingStart => {
+                // Transition to Running if the start controller input is received
                 if let Some(input_value) = input {
                     match input_value {
                         ControllerInput::StartController => {
@@ -150,6 +163,7 @@ impl MultiDevice {
                 }
             }
             DeviceState::Running => {
+                // Transition to Complete if stop game command is received
                 if let Some(input_value) = input {
                     match input_value {
                         ControllerInput::StopGame => {
@@ -166,6 +180,7 @@ impl MultiDevice {
                 }
             }
             DeviceState::Complete => {
+                // Handle different reset/restart scenarios
                 if let Some(input_value) = input {
                     match input_value {
                         ControllerInput::ResetGame => {
