@@ -1,3 +1,8 @@
+//! Simulates a traffic light with pedestrian crossing.
+//! The traffic light has three colors: red, yellow, and green.
+//! The red lights lasts 25000 ms, the yellow light lasts 5000 ms, and the green light lasts 30000 ms.
+//! If There is a pedestrian crossing, the green light will last 20000 ms.
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum TrafficLightColor {
     Red,
@@ -11,13 +16,39 @@ struct TrafficLightState {
     last_transition_time_ms: u32,
 }
 
-fn get_next_color(state: TrafficLightState) -> TrafficLightColor {}
+// Transitions to the next color of the traffic light
+// @input state: The current state of the traffic light
+// @output TrafficLightColor: The next color of the traffic light
+fn get_next_color(state: TrafficLightState) -> TrafficLightColor {
+    match state.current_color {
+        TrafficLightColor::Red => TrafficLightColor::Green,
+        TrafficLightColor::Yellow => TrafficLightColor::Red,
+        TrafficLightColor::Green => TrafficLightColor::Yellow,
+    }
+}
 
+// Transitions to the next state of the traffic light based on the rules in the module documentation
+// @input state: The current state of the traffic light
+// @input current_time_ms: The current time in milliseconds
+// @input pedestrian_walk_request: A boolean indicating if a pedestrian is crossing
+// @return TrafficLightColor: The next color of the traffic light
 fn get_next_state(
     state: TrafficLightState,
     current_time_ms: u32,
     pedestrian_walk_request: bool,
 ) -> TrafficLightColor {
+    match (
+        current_time_ms - state.last_transition_time_ms,
+        state.current_color,
+        pedestrian_walk_request,
+    ) {
+        (25000..=u32::MAX, TrafficLightColor::Red, _) => get_next_color(state),
+        (5000..=u32::MAX, TrafficLightColor::Yellow, _) => get_next_color(state),
+        // match the timing based on if the pedestrian is crossing
+        (30000..=u32::MAX, TrafficLightColor::Green, false) => get_next_color(state),
+        (20000..=u32::MAX, TrafficLightColor::Green, true) => get_next_color(state),
+        (_, _, _) => state.current_color,
+    }
 }
 
 // Do not modify below here
